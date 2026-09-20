@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Shield, Clock, FileText, CheckCircle2, ChevronRight, FileCheck, Building, Leaf, FileKey, ExternalLink } from "lucide-react";
 
@@ -68,7 +68,7 @@ export default function ChecklistPage() {
               Approvals you need
             </h1>
             
-            <Accordion className="space-y-3" defaultValue="bis">
+            <Accordion className="space-y-3" defaultValue={["bis"]}>
               {approvals.map((app) => (
                 <AccordionItem value={app.id} key={app.id} className="bg-white border border-sarathi-line rounded-[12px] overflow-hidden data-[state=open]:border-sarathi-blue-600 transition-colors">
                   <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-sarathi-blue-050 transition-colors [&[data-state=open]]:bg-sarathi-blue-050">

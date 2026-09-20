@@ -45,7 +45,7 @@ export default function DescribePage() {
                   Tell us about your business
                 </h2>
                 <p className="text-[15px] text-sarathi-muted mb-7">
-                  Describe it in your own words — we'll figure out the rest.
+                  Describe it in your own words — we&apos;ll figure out the rest.
                 </p>
                 
                 <div className="space-y-5">
@@ -77,7 +77,7 @@ export default function DescribePage() {
                       <label className="font-semibold text-[14.5px] text-sarathi-ink block">
                         State
                       </label>
-                      <Select value={stateName} onValueChange={setStateName}>
+                      <Select value={stateName} onValueChange={(v) => setStateName(v || "")}>
                         <SelectTrigger className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 focus:border-sarathi-blue focus:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all data-[state=open]:border-sarathi-blue data-[state=open]:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]">
                           <SelectValue placeholder="Select a state" />
                         </SelectTrigger>

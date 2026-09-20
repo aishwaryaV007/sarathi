@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ShieldCheck, ArrowRight, CheckCircle2, ArrowDown, Check, Shield, Minus } from "lucide-react";
 
 export default function Home() {

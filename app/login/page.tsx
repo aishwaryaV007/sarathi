@@ -49,7 +49,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center pb-8 pt-0 px-8">
           <p className="text-[13.5px] text-sarathi-faint text-center">
-            New here? You'll set up your profile after signing in.
+            New here? You&apos;ll set up your profile after signing in.
           </p>
         </CardFooter>
       </Card>
