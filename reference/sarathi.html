@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sarathi — Business Approval Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#16437e;        /* institutional primary */
+    --blue-700:#0f335f;
+    --blue-600:#1d5091;
+    --blue-050:#eef3fa;
+    --blue-100:#dbe6f4;
+    --ink:#1b2733;
+    --muted:#5f6e7d;
+    --faint:#8695a3;
+    --line:#e2e8f0;
+    --line-strong:#cdd8e3;
+    --page:#f4f6f9;
+    --white:#ffffff;
+    --green:#1e7a46;
+    --green-050:#e8f4ec;
+    --amber:#a8690a;
+    --amber-050:#fbf1e0;
+    --red:#b23b3b;
+    --red-050:#f8ecec;
+    --shadow:0 1px 2px rgba(16,42,79,.06), 0 6px 20px rgba(16,42,79,.06);
+    --shadow-sm:0 1px 2px rgba(16,42,79,.08);
+    --radius:10px;
+    --radius-sm:7px;
+    --sans:'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --serif:'Source Serif 4', Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:var(--page);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue-600);text-decoration:none;}
+  h1,h2,h3,h4{margin:0;line-height:1.2;}
+  p{margin:0;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- top utility bar ---------- */
+  .utility{background:var(--blue-700);color:#cfe0f2;font-size:12.5px;}
+  .utility .wrap{display:flex;justify-content:space-between;align-items:center;height:34px;}
+  .utility a{color:#dbe9f7;}
+  .utility .u-right{display:flex;gap:18px;align-items:center;}
+  .lang{display:flex;gap:2px;align-items:center;}
+  .lang button{color:#a9c4e0;font-size:12.5px;padding:2px 6px;border-radius:4px;}
+  .lang button.on{color:#fff;background:rgba(255,255,255,.14);font-weight:600;}
+
+  /* ---------- header ---------- */
+  header.site{background:var(--white);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40;}
+  header.site .wrap{display:flex;align-items:center;justify-content:space-between;height:76px;gap:24px;}
+  .brand{display:flex;align-items:center;gap:13px;cursor:pointer;}
+  .mark{width:44px;height:44px;flex:none;}
+  .brand-txt .name{font-family:var(--serif);font-weight:700;font-size:22px;letter-spacing:-.2px;color:var(--blue);line-height:1;}
+  .brand-txt .sub{font-size:11.5px;color:var(--muted);margin-top:3px;letter-spacing:.02em;}
+  nav.main{display:flex;align-items:center;gap:4px;}
+  nav.main a{color:var(--ink);font-weight:500;font-size:15px;padding:9px 14px;border-radius:7px;}
+  nav.main a:hover{background:var(--blue-050);color:var(--blue);}
+  nav.main a.active{color:var(--blue);font-weight:600;background:var(--blue-050);}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;border-radius:8px;padding:10px 18px;transition:background .15s,border-color .15s;}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:hover{background:var(--blue-700);}
+  .btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--line-strong);}
+  .btn-outline:hover{border-color:var(--blue);background:var(--blue-050);}
+  .btn-ghost{color:var(--blue-600);font-weight:600;padding:10px 8px;}
+  .btn-ghost:hover{color:var(--blue-700);}
+  .btn.lg{padding:14px 26px;font-size:16px;}
+  .btn.block{width:100%;justify-content:center;}
+  .header-cta{display:flex;align-items:center;gap:10px;}
+
+  .proto-badge{font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-050);border:1px solid #f0dcb8;padding:3px 9px;border-radius:20px;letter-spacing:.03em;}
+
+  /* ---------- views ---------- */
+  .view{display:none;}
+  .view.show{display:block;}
+
+  /* ---------- hero ---------- */
+  .hero{background:
+      radial-gradient(1200px 400px at 85% -10%, #e9f0fa 0%, rgba(233,240,250,0) 60%),
+      linear-gradient(180deg,#fbfcfe 0%, var(--page) 100%);
+    border-bottom:1px solid var(--line);}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:64px 24px 60px;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--blue);font-weight:600;font-size:13.5px;background:var(--blue-050);border:1px solid var(--blue-100);padding:6px 12px;border-radius:20px;margin-bottom:22px;}
+  .hero h1{font-family:var(--serif);font-weight:700;font-size:44px;letter-spacing:-.5px;line-height:1.08;color:var(--ink);}
+  .hero h1 .accent{color:var(--blue);}
+  .hero .lede{font-size:18px;color:var(--muted);margin-top:20px;max-width:33em;}
+  .hero-actions{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap;}
+  .hero-trust{display:flex;gap:26px;margin-top:34px;flex-wrap:wrap;}
+  .hero-trust .t{display:flex;flex-direction:column;}
+  .hero-trust .t b{font-size:22px;color:var(--ink);font-weight:800;}
+  .hero-trust .t span{font-size:13px;color:var(--muted);}
+
+  /* hero preview card */
+  .preview{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
+  .preview .pv-head{background:var(--blue-050);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--blue-700);font-weight:600;}
+  .preview .pv-body{padding:18px 16px 20px;}
+  .pv-input{border:1px solid var(--line-strong);border-radius:8px;padding:11px 13px;font-size:14px;color:var(--ink);background:#fbfcfe;display:flex;align-items:center;gap:9px;}
+  .pv-input .cursor{width:1.5px;height:16px;background:var(--blue);display:inline-block;animation:blink 1.1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  .pv-arrow{display:flex;justify-content:center;color:var(--faint);margin:12px 0;}
+  .pv-list{display:flex;flex-direction:column;gap:9px;}
+  .pv-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;}
+  .pv-item .ico{flex:none;color:var(--green);margin-top:1px;}
+  .pv-item .txt{font-size:13.5px;}
+  .pv-item .txt b{display:block;font-weight:600;color:var(--ink);}
+  .pv-item .law{font-size:11.5px;color:var(--green);font-weight:600;margin-top:2px;display:inline-flex;gap:5px;align-items:center;}
+
+  /* ---------- section scaffolding ---------- */
+  section.band{padding:64px 0;border-bottom:1px solid var(--line);}
+  section.band.alt{background:var(--white);}
+  .sec-head{max-width:640px;margin-bottom:40px;}
+  .sec-head h2{font-family:var(--serif);font-size:30px;font-weight:700;letter-spacing:-.3px;}
+  .sec-head p{color:var(--muted);font-size:17px;margin-top:12px;}
+
+  /* how it works — genuine 4-step sequence, so numbered is warranted */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:step;}
+  .step{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:22px 20px;position:relative;}
+  .step .n{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+  .step h4{font-size:16.5px;font-weight:700;margin-bottom:6px;}
+  .step p{font-size:14px;color:var(--muted);}
+  .step .connector{position:absolute;top:37px;right:-10px;color:var(--line-strong);z-index:1;}
+  .step:last-child .connector{display:none;}
+
+  /* comparison */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .compare .col{border-radius:var(--radius);padding:26px 24px;border:1px solid var(--line);}
+  .compare .col.old{background:#fbfbfc;}
+  .compare .col.new{background:var(--blue-050);border-color:var(--blue-100);}
+  .compare .col h4{font-size:15px;font-weight:700;letter-spacing:.01em;margin-bottom:4px;}
+  .compare .col.old h4{color:var(--muted);}
+  .compare .col.new h4{color:var(--blue);}
+  .compare .col .role{font-size:13px;color:var(--faint);margin-bottom:18px;}
+  .compare ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:13px;}
+  .compare li{display:flex;gap:11px;font-size:14.5px;align-items:flex-start;}
+  .compare li svg{flex:none;margin-top:2px;}
+  .compare .old li svg{color:var(--faint);}
+  .compare .new li svg{color:var(--green);}
+  .compare .new li b{font-weight:600;}
+
+  /* ---------- wizard ---------- */
+  .subpage{padding:44px 0 72px;min-height:70vh;}
+  .crumbs{font-size:13.5px;color:var(--muted);margin-bottom:22px;display:flex;gap:8px;align-items:center;}
+  .crumbs a{color:var(--muted);}
+  .crumbs .sep{color:var(--faint);}
+  .wizard-shell{max-width:720px;margin:0 auto;}
+  .progress{display:flex;align-items:center;margin:0 auto 30px;max-width:640px;}
+  .progress .pnode{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;width:92px;text-align:center;}
+  .progress .dot{width:30px;height:30px;border-radius:50%;border:2px solid var(--line-strong);background:#fff;color:var(--faint);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;transition:.2s;}
+  .progress .plabel{font-size:11.5px;color:var(--faint);font-weight:600;letter-spacing:.01em;}
+  .progress .pbar{height:2px;background:var(--line-strong);flex:1;margin-top:-22px;}
+  .progress .pnode.done .dot{background:var(--green);border-color:var(--green);color:#fff;}
+  .progress .pnode.active .dot{background:var(--blue);border-color:var(--blue);color:#fff;}
+  .progress .pnode.active .plabel{color:var(--blue);}
+  .progress .pnode.done .plabel{color:var(--green);}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+  .wizard-card{padding:34px 36px 30px;}
+  .wizard-card .q-step{font-size:12.5px;font-weight:700;color:var(--blue);letter-spacing:.04em;text-transform:uppercase;}
+  .wizard-card h2{font-family:var(--serif);font-size:25px;margin:7px 0 4px;font-weight:700;}
+  .wizard-card .q-help{color:var(--muted);font-size:15px;margin-bottom:26px;}
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-weight:600;font-size:14.5px;margin-bottom:8px;}
+  .field .hint{font-weight:400;color:var(--faint);font-size:13px;}
+  input[type=text],input[type=number],select{
+    width:100%;font-family:inherit;font-size:15px;color:var(--ink);
+    border:1.5px solid var(--line-strong);border-radius:8px;padding:11px 13px;background:#fff;transition:border-color .15s,box-shadow .15s;}
+  input:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-050);}
+  .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .opt{border:1.5px solid var(--line-strong);border-radius:9px;padding:14px 15px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:.15s;background:#fff;}
+  .opt:hover{border-color:var(--blue-600);background:var(--blue-050);}
+  .opt.sel{border-color:var(--blue);background:var(--blue-050);box-shadow:0 0 0 3px var(--blue-050);}
+  .opt .oradio{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong);flex:none;margin-top:2px;position:relative;}
+  .opt.sel .oradio{border-color:var(--blue);}
+  .opt.sel .oradio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--blue);}
+  .opt .otitle{font-weight:600;font-size:14.5px;}
+  .opt .odesc{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .wizard-foot{display:flex;justify-content:space-between;align-items:center;margin-top:30px;padding-top:22px;border-top:1px solid var(--line);}
+
+  /* ---------- results ---------- */
+  .results-head{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;margin-bottom:26px;}
+  .results-head h1{font-family:var(--serif);font-size:30px;font-weight:700;}
+  .results-head .rh-sub{color:var(--muted);margin-top:8px;font-size:15.5px;}
+  .summary-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;}
+  .tile{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .tile .tl{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+  .tile .tv{font-size:20px;font-weight:800;color:var(--ink);}
+  .tile .tv small{font-size:12.5px;font-weight:600;color:var(--muted);}
+  .cat-pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:2px;}
+  .cat-orange{background:var(--amber-050);color:var(--amber);}
+  .cat-red{background:var(--red-050);color:var(--red);}
+  .cat-green{background:var(--green-050);color:var(--green);}
+
+  .results-layout{display:grid;grid-template-columns:1fr 300px;gap:26px;align-items:start;}
+  .list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .list-head h3{font-size:18px;font-weight:700;}
+  .list-head .count{font-size:13.5px;color:var(--muted);}
+
+  .approval{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+  .approval[open]{border-color:var(--line-strong);box-shadow:var(--shadow-sm);}
+  .approval summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;align-items:center;gap:14px;}
+  .approval summary::-webkit-details-marker{display:none;}
+  .a-ico{width:38px;height:38px;border-radius:8px;background:var(--blue-050);color:var(--blue);flex:none;display:flex;align-items:center;justify-content:center;}
+  .a-main{flex:1;min-width:0;}
+  .a-name{font-weight:700;font-size:15.5px;}
+  .a-dept{font-size:13px;color:var(--muted);margin-top:2px;}
+  .a-right{display:flex;align-items:center;gap:14px;flex:none;}
+  .a-time{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .chev{color:var(--faint);transition:transform .2s;}
+  .approval[open] .chev{transform:rotate(180deg);}
+  .a-body{padding:2px 18px 20px 70px;border-top:1px solid var(--line);}
+  .lawchip{display:inline-flex;align-items:center;gap:7px;background:var(--green-050);color:var(--green);border:1px solid #cfe8d8;font-weight:600;font-size:12.5px;padding:6px 11px;border-radius:7px;margin:16px 0 4px;}
+  .a-section-label{font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.03em;margin:18px 0 9px;}
+  .docs{display:flex;flex-wrap:wrap;gap:8px;}
+  .doc{display:inline-flex;align-items:center;gap:7px;font-size:13px;background:#f7f9fc;border:1px solid var(--line);border-radius:7px;padding:6px 11px;color:var(--ink);}
+  .doc.have{background:var(--green-050);border-color:#cfe8d8;color:var(--green);}
+  .a-actions{display:flex;gap:12px;align-items:center;margin-top:20px;}
+  .applied-flag{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-weight:600;font-size:14px;}
+
+  .side{position:sticky;top:96px;display:flex;flex-direction:column;gap:16px;}
+  .side .card{padding:18px;}
+  .side h4{font-size:14.5px;font-weight:700;margin-bottom:6px;}
+  .side p{font-size:13px;color:var(--muted);}
+  .side .reuse-doc{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .side .reuse-doc:last-child{border-bottom:none;}
+  .side .reuse-doc svg{color:var(--green);flex:none;}
+  .side .incentive{padding:11px 0;border-bottom:1px solid var(--line);}
+  .side .incentive:last-child{border-bottom:none;}
+  .side .incentive b{font-size:14px;font-weight:600;display:block;}
+  .side .incentive span{font-size:12.5px;color:var(--green);font-weight:600;}
+
+  /* ---------- dashboard ---------- */
+  .dash-grid{display:grid;grid-template-columns:1fr 320px;gap:26px;align-items:start;}
+  .app-row{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;display:grid;grid-template-columns:38px 1fr 150px 120px;gap:14px;align-items:center;}
+  .app-row .a-ico{margin:0;}
+  .status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:20px;}
+  .st-review{background:var(--blue-050);color:var(--blue);}
+  .st-approved{background:var(--green-050);color:var(--green);}
+  .st-action{background:var(--amber-050);color:var(--amber);}
+  .sla{font-size:12px;color:var(--muted);}
+  .sla .bar{height:5px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden;}
+  .sla .bar i{display:block;height:100%;border-radius:4px;background:var(--blue);}
+  .sla.warn .bar i{background:var(--amber);}
+  .empty{background:var(--white);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:40px;text-align:center;color:var(--muted);}
+  .empty h4{font-size:17px;color:var(--ink);margin-bottom:8px;}
+  .renewal{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);}
+  .renewal:last-child{border-bottom:none;}
+  .renewal svg{color:var(--amber);flex:none;margin-top:2px;}
+  .renewal b{font-size:13.5px;font-weight:600;display:block;}
+  .renewal span{font-size:12.5px;color:var(--muted);}
+
+  /* ---------- toast ---------- */
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 20px;border-radius:9px;font-size:14.5px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:.25s;z-index:80;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast svg{color:#6ee29e;}
+
+  /* ---------- footer ---------- */
+  footer.site{background:var(--blue-700);color:#c4d6ea;padding:36px 0;font-size:13.5px;}
+  footer.site .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center;}
+  footer.site .fnote{max-width:52ch;line-height:1.6;color:#a9c4e0;}
+  footer.site b{color:#fff;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:900px){
+    .hero .wrap{grid-template-columns:1fr;gap:36px;padding:44px 24px;}
+    .hero h1{font-size:34px;}
+    .steps{grid-template-columns:1fr 1fr;}
+    .step .connector{display:none;}
+    .compare{grid-template-columns:1fr;}
+    .summary-tiles{grid-template-columns:1fr 1fr;}
+    .results-layout,.dash-grid{grid-template-columns:1fr;}
+    .side{position:static;}
+    nav.main{display:none;}
+    .app-row{grid-template-columns:38px 1fr;grid-auto-rows:auto;}
+    .app-row .status,.app-row .sla{grid-column:2;}
+  }
+  @media (max-width:560px){
+    .opt-grid,.two-col{grid-template-columns:1fr;}
+    .summary-tiles{grid-template-columns:1fr;}
+    .header-cta .btn-outline{display:none;}
+    .hero-trust{gap:18px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP UTILITY BAR ============ -->
+<div class="utility">
+  <div class="wrap">
+    <span>Government of India · Ease of Doing Business initiative <span style="opacity:.6">(prototype)</span></span>
+    <div class="u-right">
+      <a href="#" onclick="return false">Screen Reader</a>
+      <a href="#" onclick="return false">Help</a>
+      <div class="lang" aria-label="language">
+        <button class="on">EN</button><button>हिं</button><button>తెలుగు</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="wrap">
+    <div class="brand" onclick="go('home')" role="button" aria-label="Sarathi home">
+      <svg class="mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="3" y="3" width="42" height="42" rx="10" fill="#16437e"/>
+        <path d="M16 24.5l5.2 5.2L33 18" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 8.5c5 2.4 9 3 12 3v9c0 8-5.4 13.2-12 16-6.6-2.8-12-8-12-16v-9c3 0 7-.6 12-3z" stroke="#8fb4e0" stroke-width="1.6" opacity=".7"/>
+      </svg>
+      <div class="brand-txt">
+        <div class="name">Sarathi</div>
+        <div class="sub">Business Approval &amp; Compliance Assistant</div>
+      </div>
+    </div>
+    <nav class="main">
+      <a data-nav="home" class="active" onclick="go('home');return false" href="#">Home</a>
+      <a data-nav="dashboard" onclick="go('dashboard');return false" href="#">Track Applications</a>
+      <a onclick="return false" href="#">Schemes</a>
+      <a onclick="return false" href="#">Guide</a>
+    </nav>
+    <div class="header-cta">
+      <span class="proto-badge">SIH 2026 · Prototype</span>
+      <button class="btn btn-outline" onclick="go('dashboard')">Login</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HOME ============ -->
+<div id="view-home" class="view show">
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V5l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Every requirement backed by law
+        </span>
+        <h1>Get <span class="accent">every approval</span> to start your business — from one place.</h1>
+        <p class="lede">Describe your business in plain language. Sarathi tells you exactly which government permissions you need, shows the law behind each one, and helps you apply and track them together — no agent required.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary lg" onclick="startWizard()">
+            Start my approval journey
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="btn btn-outline lg" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+        </div>
+        <div class="hero-trust">
+          <div class="t"><b>10+</b><span>departments, one flow</span></div>
+          <div class="t"><b>₹5k–₹25k</b><span>saved per licence in agent fees</span></div>
+          <div class="t"><b>Enter once</b><span>documents reused everywhere</span></div>
+        </div>
+      </div>
+
+      <!-- concept preview -->
+      <div class="preview" aria-hidden="true">
+        <div class="pv-head">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          You describe your plan
+        </div>
+        <div class="pv-body">
+          <div class="pv-input">“Plastic products unit, 30 workers, ₹40 lakh, Ghatkesar”<span class="cursor"></span></div>
+          <div class="pv-arrow">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M6 13l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="pv-list">
+            <div class="pv-item">
+              <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="txt"><b>Consent to Establish</b>State Pollution Control Board
+                <span class="law"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Water Act, 1974 · Sec 25</span>
+              </span>
+            </div>
+            <div class="pv-item">
+              <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="txt"><b>Factory Licence</b>Dept. of Factories &amp; Boilers
+                <span class="law"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Factories Act, 1948 · Sec 6</span>
+              </span>
+            </div>
+            <div class="pv-item">
+              <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="txt"><b>Udyam (MSME) Registration</b>Ministry of MSME · Micro
+                <span class="law"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>MSMED Act, 2006</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <section class="band alt" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Four steps, start to submitted</h2>
+        <p>Sarathi does not just tell you the rules. It carries you through the whole journey.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <span class="connector"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h4>Understand</h4>
+          <p>Describe your business in plain words — activity, place, size, workers. No jargon needed.</p>
+        </div>
+        <div class="step">
+          <div class="n">2</div>
+          <span class="connector"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h4>Discover</h4>
+          <p>Get a checklist of exactly the approvals you need — each one citing the actual law behind it.</p>
+        </div>
+        <div class="step">
+          <div class="n">3</div>
+          <span class="connector"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h4>Prepare</h4>
+          <p>Forms are pre-filled from what you entered once. Upload a document once — it is reused everywhere.</p>
+        </div>
+        <div class="step">
+          <div class="n">4</div>
+          <h4>Submit &amp; track</h4>
+          <p>Apply to all departments together. Watch every application, timeline and renewal on one dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- why different -->
+  <section class="band">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Not another submission counter</h2>
+        <p>Existing single-window portals let you drop applications in one place — but you still have to know what to apply for. That is the part people pay agents to figure out.</p>
+      </div>
+      <div class="compare">
+        <div class="col old">
+          <h4>Existing portals</h4>
+          <div class="role">You already know what you need, then apply</div>
+          <ul>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>You search the list and pick approvals yourself</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>No check on whether an application is correct</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Same documents re-entered for each department</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Answers, when given, are not tied to any law</li>
+          </ul>
+        </div>
+        <div class="col new">
+          <h4>Sarathi</h4>
+          <div class="role">It asks, then discovers everything for you</div>
+          <ul>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Asks simple questions</b> and builds your personal checklist</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Every item cites its statute</b> — verifiable, never a guess</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Enter once, reuse everywhere</b> across all forms</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Applies and tracks</b> across departments in parallel</li>
+          </ul>
+        </div>
+      </div>
+      <div style="margin-top:34px;text-align:center;">
+        <button class="btn btn-primary lg" onclick="startWizard()">Try it — build my checklist</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ WIZARD ============ -->
+<div id="view-wizard" class="view">
+  <div class="subpage">
+    <div class="wrap">
+      <div class="crumbs"><a onclick="go('home');return false" href="#">Home</a><span class="sep">›</span><span>New approval journey</span></div>
+      <div class="wizard-shell">
+        <div class="progress" id="progress"></div>
+        <div class="card wizard-card" id="wizardCard"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RESULTS ============ -->
+<div id="view-results" class="view">
+  <div class="subpage">
+    <div class="wrap">
+      <div class="crumbs"><a onclick="go('home');return false" href="#">Home</a><span class="sep">›</span><a onclick="startWizard();return false" href="#">Approval journey</a><span class="sep">›</span><span>Your checklist</span></div>
+
+      <div class="results-head">
+        <div>
+          <h1>Your approval checklist</h1>
+          <p class="rh-sub" id="resultsSub"></p>
+        </div>
+        <button class="btn btn-outline" onclick="startWizard()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 018-8 8 8 0 016.9 4M20 4v4h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Edit my answers
+        </button>
+      </div>
+
+      <div class="summary-tiles" id="summaryTiles"></div>
+
+      <div class="results-layout">
+        <div>
+          <div class="list-head">
+            <h3>Approvals you need</h3>
+            <span class="count" id="listCount"></span>
+          </div>
+          <div id="approvalList"></div>
+        </div>
+
+        <aside class="side">
+          <div class="card">
+            <h4>Documents on file</h4>
+            <p style="margin-bottom:10px">Uploaded once — reused across every application.</p>
+            <div id="reuseDocs"></div>
+          </div>
+          <div class="card">
+            <h4>Incentives you may qualify for</h4>
+            <p style="margin-bottom:8px">Matched to your profile.</p>
+            <div id="incentives"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="view-dashboard" class="view">
+  <div class="subpage">
+    <div class="wrap">
+      <div class="crumbs"><a onclick="go('home');return false" href="#">Home</a><span class="sep">›</span><span>Track applications</span></div>
+      <div class="results-head">
+        <div>
+          <h1>Application dashboard</h1>
+          <p class="rh-sub">All your government applications, timelines and renewals in one place.</p>
+        </div>
+        <button class="btn btn-primary" onclick="startWizard()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          New approval
+        </button>
+      </div>
+
+      <div class="dash-grid">
+        <div id="dashList"></div>
+        <aside class="side">
+          <div class="card">
+            <h4>Upcoming renewals</h4>
+            <p style="margin-bottom:10px">Sarathi reminds you before anything expires.</p>
+            <div class="renewal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div><b>Consent to Operate</b><span>Renews in 8 months · State PCB</span></div>
+            </div>
+            <div class="renewal">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div><b>Fire NOC</b><span>Renews in 11 months · Fire Services</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Need help?</h4>
+            <p>A step-by-step guide explains each department’s process in plain language.</p>
+            <button class="btn btn-outline block" style="margin-top:12px" onclick="return false">Open the guide</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="wrap">
+    <div>
+      <div style="font-family:var(--serif);font-weight:700;font-size:18px;color:#fff;margin-bottom:6px;">Sarathi</div>
+      <div class="fnote">A guided assistant for industrial approvals and compliance. <b>Prototype built for Smart India Hackathon 2026 (PS 26130).</b> Approval names, departments and statutes shown are illustrative; live submission integrates with official department systems.</div>
+    </div>
+    <div style="text-align:right;font-size:12.5px;color:#a9c4e0;line-height:1.9;">
+      Sources: India Code · MSME S.O. 1364(E), 2025<br>CPCB categorisation · DigiLocker / API Setu<br>Model reference: single-window &amp; guided-journey systems
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="toastMsg"></span></div>
+
+<script>
+/* ============================================================
+   Sarathi prototype — all logic client-side, no backend.
+   ============================================================ */
+
+const STATE_MAP = {
+  telangana:{name:"Telangana", pcb:"Telangana State Pollution Control Board (TSPCB)", factories:"Dept. of Factories, Telangana", fire:"Telangana State Disaster Response & Fire Services", local:"Greater Hyderabad Municipal Corporation (GHMC)", fireAct:"Telangana Fire Service Act, 1999", localAct:"Telangana Municipalities Act, 2019", shopsAct:"Telangana Shops & Establishments Act, 1988", discom:"TSSPDCL", scheme:"T-IDEA (Telangana Industrial Development)"},
+  maharashtra:{name:"Maharashtra", pcb:"Maharashtra Pollution Control Board (MPCB)", factories:"Directorate of Industrial Safety & Health (DISH)", fire:"Maharashtra Fire Services", local:"Municipal Corporation", fireAct:"Maharashtra Fire Prevention & Life Safety Act, 2006", localAct:"Maharashtra Municipal Corporation Act", shopsAct:"Maharashtra Shops & Establishments Act, 2017", discom:"MSEDCL", scheme:"Maharashtra Industrial Policy incentives"},
+  other:{name:"your State", pcb:"State Pollution Control Board", factories:"Dept. of Factories", fire:"State Fire Services", local:"Local Municipal Body", fireAct:"State Fire Service Act", localAct:"State Municipal Act", shopsAct:"State Shops & Establishments Act", discom:"State DISCOM", scheme:"State industrial incentives"}
+};
+
+/* business activity -> pollution category + label */
+const ACTIVITY = {
+  plastic:{label:"Plastic products manufacturing", poll:"orange"},
+  food:{label:"Food processing", poll:"orange"},
+  garment:{label:"Textile / garment stitching", poll:"green"},
+  chemical:{label:"Chemical / paint unit", poll:"red"},
+  engineering:{label:"Engineering / metal fabrication", poll:"orange"},
+  printing:{label:"Printing / packaging", poll:"green"},
+  it:{label:"IT / software services", poll:"white"}
+};
+
+const POLL_LABEL = {red:"Red", orange:"Orange", green:"Green", white:"White"};
+
+const WIZARD_STEPS = ["Business","Location","Size","Workers","Review"];
+
+let state = {
+  step:0,
+  answers:{ intent:"start", activity:"plastic", state:"telangana", district:"Ghatkesar", investment:40, workers:30, power:"yes" },
+  results:null,
+  applied:{}   // id -> true
+};
+
+/* ---------- navigation ---------- */
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('show'));
+  document.getElementById('view-'+view).classList.add('show');
+  document.querySelectorAll('nav.main a[data-nav]').forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('data-nav')===view);
+  });
+  if(view==='dashboard') renderDashboard();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function startWizard(){ state.step=0; go('wizard'); renderWizard(); }
+
+/* ---------- wizard rendering ---------- */
+function renderProgress(){
+  const p = document.getElementById('progress');
+  let h='';
+  WIZARD_STEPS.forEach((label,i)=>{
+    const cls = i<state.step?'done':(i===state.step?'active':'');
+    const inner = i<state.step
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : (i+1);
+    h += `<div class="pnode ${cls}"><div class="dot">${inner}</div><div class="plabel">${label}</div></div>`;
+    if(i<WIZARD_STEPS.length-1) h+=`<div class="pbar"></div>`;
+  });
+  p.innerHTML=h;
+}
+
+function opt(field,val,title,desc){
+  const sel = state.answers[field]===val ? 'sel':'';
+  return `<div class="opt ${sel}" onclick="pick('${field}','${val}')">
+    <span class="oradio"></span>
+    <span><span class="otitle">${title}</span>${desc?`<span class="odesc">${desc}</span>`:''}</span>
+  </div>`;
+}
+function pick(field,val){ state.answers[field]=val; renderWizard(); }
+function setVal(field,val){ state.answers[field]=val; }
+
+function renderWizard(){
+  renderProgress();
+  const a = state.answers;
+  const card = document.getElementById('wizardCard');
+  let body='', head='', help='';
+  const step = state.step;
+
+  if(step===0){
+    head="What do you want to do?";
+    help="Tell us where you are in your business journey.";
+    body = `<div class="field"><div class="opt-grid">
+      ${opt('intent','start','Start a new unit','Set up a new business or factory')}
+      ${opt('intent','expand','Expand an existing unit','Add capacity, product or location')}
+      ${opt('intent','shift','Relocate a unit','Move to a new premises')}
+      ${opt('intent','renew','Renew / stay compliant','Manage renewals and returns')}
+    </div></div>
+    <div class="field" style="margin-top:22px">
+      <label>What is your business activity?</label>
+      <select onchange="setVal('activity',this.value)">
+        ${Object.entries(ACTIVITY).map(([k,v])=>`<option value="${k}" ${a.activity===k?'selected':''}>${v.label}</option>`).join('')}
+      </select>
+      <div class="hint" style="margin-top:8px">This decides your pollution category and which safety approvals apply.</div>
+    </div>`;
+  }
+  else if(step===1){
+    head="Where will it be located?";
+    help="Approvals and departments differ by State and local body.";
+    body = `<div class="field">
+      <label>State</label>
+      <select onchange="setVal('state',this.value)">
+        <option value="telangana" ${a.state==='telangana'?'selected':''}>Telangana</option>
+        <option value="maharashtra" ${a.state==='maharashtra'?'selected':''}>Maharashtra</option>
+        <option value="other" ${a.state==='other'?'selected':''}>Other State</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>District / City</label>
+      <input type="text" value="${a.district}" oninput="setVal('district',this.value)" placeholder="e.g. Ghatkesar, Ranga Reddy"/>
+    </div>
+    <div class="field">
+      <label>Premises <span class="hint">— is the location inside a notified industrial area?</span></label>
+      <div class="opt-grid">
+        ${opt('area','industrial','Industrial park / SEZ','Faster clearances may apply')}
+        ${opt('area','general','General / other area','Standard clearances apply')}
+      </div>
+    </div>`;
+  }
+  else if(step===2){
+    head="How big is the investment?";
+    help="Your investment sets your MSME category, which changes the process and incentives.";
+    body = `<div class="field">
+      <label>Investment in plant, machinery &amp; equipment</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px;font-weight:700;color:var(--blue)">₹</span>
+        <input type="number" value="${a.investment}" min="1" oninput="setVal('investment',Number(this.value))" style="max-width:180px"/>
+        <span style="color:var(--muted);font-weight:600">lakh</span>
+      </div>
+      <div class="hint" style="margin-top:10px">Micro ≤ ₹2.5 crore · Small ≤ ₹25 crore · Medium ≤ ₹125 crore (with matching turnover) — per MSME notification S.O. 1364(E), 2025.</div>
+    </div>
+    <div class="field">
+      <label>Business structure</label>
+      <div class="opt-grid">
+        ${opt('entity','proprietor','Proprietorship','Single owner')}
+        ${opt('entity','partnership','Partnership / LLP','Two or more partners')}
+        ${opt('entity','company','Private Limited','Registered company')}
+        ${opt('entity','notyet','Not decided yet','Sarathi will suggest one')}
+      </div>
+    </div>`;
+  }
+  else if(step===3){
+    head="How many people will work there?";
+    help="Worker count and power use decide whether the Factories Act applies to you.";
+    body = `<div class="field">
+      <label>Number of workers</label>
+      <input type="number" value="${a.workers}" min="0" oninput="setVal('workers',Number(this.value))" style="max-width:180px"/>
+    </div>
+    <div class="field">
+      <label>Will the premises use electric power for manufacturing?</label>
+      <div class="opt-grid">
+        ${opt('power','yes','Yes, uses power','Factories Act applies at 10+ workers')}
+        ${opt('power','no','No power used','Factories Act applies at 20+ workers')}
+      </div>
+    </div>`;
+  }
+  else if(step===4){
+    const act = ACTIVITY[a.activity];
+    const st = STATE_MAP[a.state];
+    head="Review your details";
+    help="Confirm the details below and Sarathi will build your checklist.";
+    const rows = [
+      ["Activity", act.label],
+      ["Location", `${a.district||'—'}, ${st.name}`],
+      ["Investment", `₹${a.investment} lakh`],
+      ["Workers", `${a.workers} · ${a.power==='yes'?'with power':'no power'}`]
+    ];
+    body = `<div class="field">
+      ${rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line)">
+        <span style="color:var(--muted);font-size:14.5px">${r[0]}</span>
+        <span style="font-weight:600;font-size:14.5px">${r[1]}</span></div>`).join('')}
+    </div>
+    <div style="background:var(--blue-050);border:1px solid var(--blue-100);border-radius:9px;padding:14px 16px;font-size:14px;color:var(--blue-700);display:flex;gap:10px;align-items:flex-start">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Sarathi will read these details, apply the current rules, and list only the approvals that actually apply to you — each linked to its law.
+    </div>`;
+  }
+
+  const backBtn = step>0
+    ? `<button class="btn btn-ghost" onclick="prevStep()">← Back</button>`
+    : `<button class="btn btn-ghost" onclick="go('home')">← Cancel</button>`;
+  const nextBtn = step<4
+    ? `<button class="btn btn-primary" onclick="nextStep()">Continue →</button>`
+    : `<button class="btn btn-primary lg" onclick="buildResults()">Build my checklist →</button>`;
+
+  card.innerHTML = `
+    <div class="q-step">Step ${step+1} of ${WIZARD_STEPS.length}</div>
+    <h2>${head}</h2>
+    <p class="q-help">${help}</p>
+    ${body}
+    <div class="wizard-foot">${backBtn}${nextBtn}</div>`;
+}
+function nextStep(){ if(state.step<4){state.step++;renderWizard();window.scrollTo({top:0,behavior:'smooth'});} }
+function prevStep(){ if(state.step>0){state.step--;renderWizard();window.scrollTo({top:0,behavior:'smooth'});} }
+
+/* ---------- the "engine": derive approvals from answers ---------- */
+function computeResults(){
+  const a = state.answers;
+  const st = STATE_MAP[a.state];
+  const act = ACTIVITY[a.activity];
+  const inv = Number(a.investment)||0; // lakh
+  // MSME classification (investment side; turnover assumed within band for demo)
+  let msme = inv<=250 ? "Micro" : inv<=2500 ? "Small" : inv<=12500 ? "Medium" : "Large";
+  // Factories Act applicability
+  const workers = Number(a.workers)||0;
+  const factoryApplies = (a.power==='yes' && workers>=10) || (a.power==='no' && workers>=20);
+  const poll = act.poll; // red/orange/green/white
+  const needsConsent = poll!=='white';
+
+  const list=[];
+  const docIcon = 'doc';
+  // 1. Udyam
+  list.push({id:'udyam',name:'Udyam (MSME) Registration',dept:'Ministry of MSME, Govt. of India',
+    law:`MSMED Act, 2006 — classification per S.O. 1364(E) (2025)`, time:'Instant (self-declaration)',
+    docs:['PAN','Aadhaar','Bank account'], icon:'badge'});
+  // 2. GST
+  list.push({id:'gst',name:'GST Registration',dept:'Central Board of Indirect Taxes & Customs',
+    law:'CGST Act, 2017 — Section 22', time:'3–7 working days',
+    docs:['PAN','Aadhaar','Proof of premises','Bank account'], icon:'rupee'});
+  // 3. Pollution consents
+  if(needsConsent){
+    const cteDays = poll==='red' ? 21 : (poll==='orange' ? 14 : 7);
+    list.push({id:'cte',name:'Consent to Establish (CTE)',dept:st.pcb,
+      law:'Water Act, 1974 (Sec 25) & Air Act, 1981 (Sec 21)', time:`${cteDays} working days`,
+      docs:['Project report','Site plan','Land document'], icon:'leaf', catNote:`${POLL_LABEL[poll]} category`});
+    list.push({id:'cto',name:'Consent to Operate (CTO)',dept:st.pcb,
+      law:'Water Act, 1974 & Air Act, 1981', time:'Before starting operations',
+      docs:['CTE approval','Pollution control setup proof'], icon:'leaf', catNote:`${POLL_LABEL[poll]} category`});
+  }
+  // 4. Factory approvals
+  if(factoryApplies){
+    list.push({id:'factory',name:'Factory Plan Approval & Licence',dept:st.factories,
+      law:'Factories Act, 1948 — Sec 6 & Sec 12', time:'15–30 working days',
+      docs:['Building plan','Machinery layout','Land document'], icon:'factory'});
+    list.push({id:'fire',name:'Fire Safety NOC',dept:st.fire,
+      law:st.fireAct, time:'7–15 working days',
+      docs:['Building plan','Fire safety layout'], icon:'flame'});
+  }
+  // 5. Local trade/building
+  list.push({id:'trade',name:'Trade / Establishment Licence',dept:st.local,
+    law:st.localAct, time:'7–15 working days',
+    docs:['Proof of premises','Property tax receipt'], icon:'building'});
+  // 6. Labour
+  list.push({id:'shops',name:'Shops & Establishment Registration',dept:'Labour Department',
+    law:st.shopsAct, time:'3–7 working days',
+    docs:['Proof of premises','Employee details'], icon:'users'});
+  if(workers>=20){
+    list.push({id:'epf',name:'EPF Registration',dept:'EPFO (via Shram Suvidha)',
+      law:'Employees’ Provident Funds Act, 1952', time:'Online, same day',
+      docs:['PAN','Employee details','Bank account'], icon:'users'});
+  }
+  if(workers>=10){
+    list.push({id:'esi',name:'ESI Registration',dept:'ESIC (via Shram Suvidha)',
+      law:'Employees’ State Insurance Act, 1948', time:'Online, same day',
+      docs:['PAN','Employee details'], icon:'users'});
+  }
+  // 7. Power
+  list.push({id:'power',name:'Industrial Power Connection',dept:st.discom,
+    law:'Electricity Act, 2003', time:'12–30 working days',
+    docs:['Proof of premises','Load requirement','Wiring certificate'], icon:'bolt'});
+
+  return { list, msme, poll, factoryApplies, st, act, needsConsent };
+}
+
+function buildResults(){
+  state.results = computeResults();
+  state.applied = {};
+  go('results');
+  renderResults();
+}
+
+/* ---------- icons ---------- */
+function iconSvg(kind){
+  const s='stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  const map={
+    badge:`<path d="M12 3l2.5 2 3-.5.5 3 2 2.5-2 2.5-.5 3-3-.5L12 21l-2.5-2-3 .5-.5-3-2-2.5 2-2.5.5-3 3 .5L12 3z" ${s} fill="none"/><path d="M9 12l2 2 4-4" ${s}/>`,
+    rupee:`<circle cx="12" cy="12" r="9" ${s}/><path d="M9 8h6M9 11h6M14 8c0 3-2 4-5 4l4 4" ${s}/>`,
+    leaf:`<path d="M5 19c0-8 6-13 14-13 0 8-5 14-13 14-1 0-1-1-1-1z" ${s}/><path d="M9 15c2-2 4-3 7-4" ${s}/>`,
+    factory:`<path d="M4 21V10l6 4V10l6 4V6l4 2v13H4z" ${s}/><path d="M8 21v-4M13 21v-4M18 21v-4" ${s}/>`,
+    flame:`<path d="M12 3c1 4 5 5 5 9a5 5 0 01-10 0c0-2 1-3 2-4 .5 1 1 1.5 2 2 0-3-1-5 1-7z" ${s}/>`,
+    building:`<path d="M5 21V4h9v17M14 8h5v13M5 21h16" ${s}/><path d="M8 8h3M8 12h3M8 16h3" ${s}/>`,
+    users:`<circle cx="9" cy="8" r="3" ${s}/><path d="M4 20c0-3 2-5 5-5s5 2 5 5" ${s}/><path d="M16 6a3 3 0 010 6M20 20c0-2-1-4-3-4.5" ${s}/>`,
+    bolt:`<path d="M13 3L5 13h6l-1 8 8-11h-6l1-7z" ${s}/>`
+  };
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none">${map[kind]||map.building}</svg>`;
+}
+
+/* ---------- results rendering ---------- */
+const PROFILE_DOCS = ['PAN','Aadhaar','Bank account','Proof of premises'];
+
+function renderResults(){
+  const r = state.results;
+  const a = state.answers;
+  document.getElementById('resultsSub').textContent =
+    `${r.act.label} · ${a.district}, ${r.st.name} · ₹${a.investment} lakh · ${a.workers} workers`;
+
+  // summary tiles
+  const pollClass = r.poll==='red'?'cat-red':r.poll==='orange'?'cat-orange':'cat-green';
+  const tiles = [
+    {l:'Approvals identified', v:`${r.list.length}`, sub:'that apply to you'},
+    {l:'MSME category', v:r.msme, sub:'S.O. 1364(E)'},
+    {l:'Pollution category', v:`<span class="cat-pill ${pollClass}">${POLL_LABEL[r.poll]}</span>`, sub:r.needsConsent?'consent required':'exempt'},
+    {l:'Factories Act', v:r.factoryApplies?'Applies':'Not now', sub:r.factoryApplies?'licence needed':'below threshold'}
+  ];
+  document.getElementById('summaryTiles').innerHTML = tiles.map(t=>`
+    <div class="tile"><div class="tl">${t.l}</div><div class="tv">${t.v} <small>${t.sub||''}</small></div></div>`).join('');
+
+  document.getElementById('listCount').textContent = `${r.list.length} approvals · ${Object.keys(state.applied).length} applied`;
+
+  // approval cards
+  document.getElementById('approvalList').innerHTML = r.list.map(item=>{
+    const applied = state.applied[item.id];
+    const docs = item.docs.map(d=>{
+      const have = PROFILE_DOCS.includes(d);
+      return `<span class="doc ${have?'have':''}">${have?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7zM14 3v4h4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'}${d}${have?' · on file':''}</span>`;
+    }).join('');
+    const action = applied
+      ? `<span class="applied-flag"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Application submitted</span>`
+      : `<button class="btn btn-primary" onclick="applyFor('${item.id}')">Apply now</button>
+         <button class="btn btn-ghost" onclick="return false">View form</button>`;
+    return `<details class="approval">
+      <summary>
+        <span class="a-ico">${iconSvg(item.icon)}</span>
+        <span class="a-main"><span class="a-name">${item.name}</span><span class="a-dept">${item.dept}</span></span>
+        <span class="a-right">
+          <span class="a-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${item.time}</span>
+          <span class="chev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </span>
+      </summary>
+      <div class="a-body">
+        <div class="lawchip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Required under ${item.law}
+        </div>
+        <div class="a-section-label">DOCUMENTS NEEDED</div>
+        <div class="docs">${docs}</div>
+        <div class="a-actions">${action}</div>
+      </div>
+    </details>`;
+  }).join('');
+
+  // reuse docs
+  document.getElementById('reuseDocs').innerHTML = PROFILE_DOCS.map(d=>`
+    <div class="reuse-doc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${d}</div>`).join('')
+    + `<div class="reuse-doc" style="color:var(--faint)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add another document</div>`;
+
+  // incentives
+  const inc = [
+    {n:'Capital Investment Subsidy', d:`${r.st.scheme} · ${r.msme} units`},
+    {n:'Stamp Duty Reimbursement', d:'On land/first sale deed'},
+    {n:'Power Cost Reimbursement', d:'Per unit, first 5 years'}
+  ];
+  document.getElementById('incentives').innerHTML = inc.map(i=>`
+    <div class="incentive"><b>${i.n}</b><span>Likely eligible — ${i.d}</span></div>`).join('');
+}
+
+function applyFor(id){
+  state.applied[id]=true;
+  const item = state.results.list.find(x=>x.id===id);
+  toast(`Application submitted: ${item.name}`);
+  renderResults();
+}
+
+/* ---------- dashboard ---------- */
+function renderDashboard(){
+  const wrap = document.getElementById('dashList');
+  if(!state.results || Object.keys(state.applied).length===0){
+    wrap.innerHTML = `<div class="empty">
+      <h4>No applications yet</h4>
+      <p style="margin-bottom:18px">Build your checklist and submit an application to start tracking it here.</p>
+      <button class="btn btn-primary" onclick="startWizard()">Start my approval journey</button>
+    </div>`;
+    return;
+  }
+  const statuses = [
+    {cls:'st-approved', label:'Approved', icon:'<path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>', pct:100, days:'Cleared', warn:false},
+    {cls:'st-review', label:'Under review', icon:'<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', pct:55, days:'9 days left in SLA', warn:false},
+    {cls:'st-action', label:'Action needed', icon:'<path d="M12 3l9 16H3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v3M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>', pct:80, days:'Upload 1 document', warn:true}
+  ];
+  const applied = state.results.list.filter(x=>state.applied[x.id]);
+  wrap.innerHTML = applied.map((item,i)=>{
+    const s = statuses[i % statuses.length];
+    return `<div class="app-row">
+      <span class="a-ico">${iconSvg(item.icon)}</span>
+      <div><div class="a-name" style="font-size:15px">${item.name}</div><div class="a-dept" style="font-size:12.5px;color:var(--muted)">${item.dept}</div></div>
+      <div><span class="status ${s.cls}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none">${s.icon}</svg>${s.label}</span></div>
+      <div class="sla ${s.warn?'warn':''}">${s.days}<div class="bar"><i style="width:${s.pct}%"></i></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- toast ---------- */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* language toggle (visual only) */
+document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.lang button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+}));
+</script>
+</body>
+</html>
