@@ -20,6 +20,7 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let userApplications: any[] = [];
+  let userProject: any = null;
   
   if (user) {
     const { data } = await supabase
@@ -30,6 +31,18 @@ export default async function DashboardPage() {
     
     if (data) {
       userApplications = data;
+    }
+
+    const { data: project } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (project) {
+      userProject = project;
     }
   }
 
@@ -59,7 +72,32 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
           
           {/* Main List */}
-          <div className="space-y-4">
+          <div className="space-y-6">
+            
+            {userProject && (
+              <div className="bg-sarathi-blue-050 border border-sarathi-blue-100 rounded-[12px] p-5 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sarathi-ink font-bold text-[18px] mb-1">
+                      {userProject.description || "Your Business Project"}
+                    </h3>
+                    <p className="text-sarathi-muted text-[14px]">
+                      {userProject.city || "Local"}, {userProject.state}
+                    </p>
+                  </div>
+                  <Link 
+                    href="/checklist"
+                    className="inline-flex items-center justify-center gap-1.5 bg-white border border-sarathi-blue-200 hover:border-sarathi-blue text-sarathi-blue font-semibold text-[14px] h-[40px] px-5 rounded-[8px] transition-colors shadow-sm shrink-0"
+                  >
+                    <FileKey className="w-4 h-4" />
+                    Resume dynamic checklist
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <h2 className="font-bold text-[20px] text-sarathi-ink">Your Applications</h2>
             {userApplications.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-[12px] border border-sarathi-line shadow-sm">
                 <FileText className="w-12 h-12 text-sarathi-line-strong mx-auto mb-4" />
@@ -106,6 +144,7 @@ export default async function DashboardPage() {
                 </Link>
               ))
             )}
+            </div>
           </div>
 
           {/* Right Sidebar */}

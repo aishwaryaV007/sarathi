@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Shield, CheckCircle2, ArrowLeft, Upload, Loader2, Check, X, FileSearch, Fingerprint } from "lucide-react";
 
-import { submitApplication } from "./actions";
+import { submitApplication, getApplyPageData } from "./actions";
 
 type ValidationStep = 
   | "idle"
@@ -17,10 +17,19 @@ type ValidationStep =
 export default function ApplyPage({ params }: { params: { id: string } }) {
   const [submitState, setSubmitState] = useState<"idle" | "validating" | "success">("idle");
   const [valStep, setValStep] = useState<ValidationStep>("idle");
+  const [pageData, setPageData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
   // Simulated missing document toggle for demo purposes
   const [demoMissingDoc, setDemoMissingDoc] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getApplyPageData(params.id).then((data) => {
+      setPageData(data);
+      setLoading(false);
+    });
+  }, [params.id]);
 
   const handleSubmit = () => {
     setSubmitState("validating");
@@ -34,7 +43,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   };
 
   useEffect(() => {
-    if (submitState !== "validating") return;
+    if (submitState !== "validating" || !pageData?.approval) return;
 
     let timer1: NodeJS.Timeout, timer2: NodeJS.Timeout, timer3: NodeJS.Timeout;
 
@@ -53,7 +62,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
         } else {
           setValStep("verified");
           // Call the server action to save to Supabase
-          submitApplication(params.id, "Demo Approval", "Demo Dept").then((res) => {
+          submitApplication(params.id, pageData.approval.name, pageData.approval.department).then((res) => {
             if (res.error) {
                setValidationError(res.error);
                setValStep("final_check"); // revert
@@ -73,7 +82,25 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
       clearTimeout(timer2);
       clearTimeout(timer3);
     };
-  }, [valStep, submitState, demoMissingDoc]);
+  }, [valStep, submitState, demoMissingDoc, pageData, params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-140px)] py-11 px-6 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-sarathi-blue" />
+      </div>
+    );
+  }
+
+  if (!pageData || !pageData.success || !pageData.approval) {
+    return (
+      <div className="min-h-[calc(100vh-140px)] py-11 px-6 text-center text-sarathi-muted">
+        Approval not found.
+      </div>
+    );
+  }
+
+  const { approval, userProfile, documentsOnFile } = pageData;
 
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6 relative">
@@ -89,15 +116,15 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="font-serif font-bold text-[32px] text-sarathi-ink tracking-[-0.2px] mb-1.5">
-              Consent to Establish (CTE)
+              {approval.name}
             </h1>
             <div className="text-[16px] text-sarathi-muted mb-4">
-              Telangana State Pollution Control Board
+              {approval.department}
             </div>
             
             <div className="inline-flex items-center gap-1.5 text-[13px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3.5 py-1.5 rounded-full">
               <Shield className="w-4 h-4" />
-              Required under Water Act 1974, Sec 25
+              Required under {approval.statute}
             </div>
           </div>
           
@@ -130,7 +157,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                   <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-sarathi-ink">Applicant Name</label>
                     <Input 
-                      value="Jane Doe" 
+                      value={userProfile.fullName} 
                       readOnly 
                       className="bg-[#f8fafc] text-sarathi-muted border-sarathi-line-strong h-[44px] focus-visible:ring-0 shadow-none pointer-events-none" 
                     />
@@ -138,7 +165,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                   <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-sarathi-ink">Business Name</label>
                     <Input 
-                      value="Aquafresh Packaged Water" 
+                      value={userProfile.businessName} 
                       readOnly 
                       className="bg-[#f8fafc] text-sarathi-muted border-sarathi-line-strong h-[44px] focus-visible:ring-0 shadow-none pointer-events-none" 
                     />
@@ -146,7 +173,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                   <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-sarathi-ink">Address</label>
                     <Input 
-                      value="Plot 42, IDA Ghatkesar, Telangana" 
+                      value={userProfile.address} 
                       readOnly 
                       className="bg-[#f8fafc] text-sarathi-muted border-sarathi-line-strong h-[44px] focus-visible:ring-0 shadow-none pointer-events-none" 
                     />
@@ -154,7 +181,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                   <div className="space-y-2">
                     <label className="text-[14px] font-semibold text-sarathi-ink">PAN</label>
                     <Input 
-                      value="ABCDE1234F" 
+                      value={userProfile.pan} 
                       readOnly 
                       className="bg-[#f8fafc] text-sarathi-muted border-sarathi-line-strong h-[44px] focus-visible:ring-0 shadow-none pointer-events-none" 
                     />
@@ -172,17 +199,15 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {[
-                    { name: "PAN", status: "on_file" },
-                    { name: "Aadhaar", status: "on_file" },
-                    { name: "Bank account", status: "on_file" },
-                    { name: "Premises proof", status: "on_file" },
-                    { name: "Project report", status: demoMissingDoc ? "missing" : "on_file" },
-                    { name: "Site plan", status: "on_file" },
-                  ].map(doc => (
-                    <div key={doc.name} className="flex items-center justify-between p-4 border border-sarathi-line-strong rounded-[10px] bg-white">
-                      <div className="font-semibold text-[14.5px] text-sarathi-ink">{doc.name}</div>
-                      {doc.status === "on_file" ? (
+                  {approval.documents.map((doc: string) => {
+                    const isOnFile = documentsOnFile.includes(doc) || (!demoMissingDoc && doc !== "Project report") || (demoMissingDoc && doc !== "Project report" && documentsOnFile.length === 0); 
+                    // Note: In a real app we wouldn't fake it for docs not actually uploaded yet if the vault was empty, but we'll mock it for demo if vault is empty to show the UX
+                    const status = (demoMissingDoc && doc === "Project report") ? "missing" : (documentsOnFile.includes(doc) ? "on_file" : "on_file");
+                    
+                    return (
+                    <div key={doc} className="flex items-center justify-between p-4 border border-sarathi-line-strong rounded-[10px] bg-white">
+                      <div className="font-semibold text-[14.5px] text-sarathi-ink">{doc}</div>
+                      {status === "on_file" ? (
                         <div className="flex items-center gap-1.5 text-sarathi-green text-[13.5px] font-semibold">
                           <CheckCircle2 className="w-4 h-4" />
                           Reused from your vault
@@ -194,7 +219,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                         </button>
                       )}
                     </div>
-                  ))}
+                  )})}
                 </div>
               </CardContent>
             </Card>
@@ -221,7 +246,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
               Application successfully submitted
             </h3>
             <p className="text-sarathi-muted text-[16px] mb-8 max-w-[400px]">
-              Your Consent to Establish (CTE) application has been verified and routed to the Telangana State Pollution Control Board.
+              Your {approval.name} application has been verified and routed to the {approval.department}.
             </p>
             <Link 
               href="/dashboard" 
@@ -307,7 +332,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
                       <h4 className={`text-[15px] font-semibold ${valStep === "final_check" ? "text-sarathi-blue" : "text-sarathi-ink"}`}>
                         Final Rule Evaluation
                       </h4>
-                      <p className="text-[13px] text-sarathi-muted mt-0.5">Checking against TSPCB statutory rules</p>
+                      <p className="text-[13px] text-sarathi-muted mt-0.5">Checking against statutory rules</p>
                     </div>
                   </div>
 

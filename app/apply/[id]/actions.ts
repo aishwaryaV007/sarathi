@@ -1,6 +1,63 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import catalog from "@/data/approvals/catalog.json";
+
+export async function getApplyPageData(approvalId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Find the approval in catalog
+  const approval = (catalog as Record<string, any>)[approvalId];
+  if (!approval) {
+    return { success: false, error: "Approval not found" };
+  }
+
+  if (!user) {
+    return { 
+      success: true, 
+      approval,
+      userProfile: { fullName: "Guest User", businessName: "Demo Business", address: "Local", pan: "Not on file" },
+      documentsOnFile: []
+    };
+  }
+
+  // Get user profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  // Get latest project
+  const { data: project } = await supabase
+    .from("projects")
+    .select("description, city, state")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  // Get documents
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("doc_type")
+    .eq("user_id", user.id);
+
+  const documentsOnFile = docs ? docs.map(d => d.doc_type) : [];
+
+  return {
+    success: true,
+    approval,
+    userProfile: {
+      fullName: profile?.full_name || user.email?.split("@")[0] || "User",
+      businessName: project?.description || "My Business",
+      address: `${project?.city || "City"}, ${project?.state || "State"}`,
+      pan: documentsOnFile.includes("PAN") ? "On File" : "Not uploaded"
+    },
+    documentsOnFile
+  };
+}
 
 export async function submitApplication(approvalId: string, approvalName: string, department: string) {
   const supabase = await createClient();
@@ -15,6 +72,7 @@ export async function submitApplication(approvalId: string, approvalName: string
     .from("projects")
     .select("id")
     .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
     .limit(1)
     .single();
 
