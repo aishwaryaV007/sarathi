@@ -688,7 +688,7 @@ export default function DescribePage() {
                     2. Legal Constitution / Structure <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
                   <Select
-                    value={legalStructure || undefined}
+                    value={legalStructure}
                     onValueChange={(v) => handleLegalStructureChange(v as LegalStructure)}
                   >
                     <SelectTrigger
@@ -732,7 +732,7 @@ export default function DescribePage() {
                       State <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Select
-                      value={stateName || undefined}
+                      value={stateName}
                       onValueChange={handleStateChange}
                     >
                       <SelectTrigger
@@ -799,7 +799,7 @@ export default function DescribePage() {
                       Local Authority Jurisdiction <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Select
-                      value={jurisdictionType || undefined}
+                      value={jurisdictionType}
                       disabled={!stateName}
                       onValueChange={(v) => {
                         setJurisdictionType((v || "") as JurisdictionType);
