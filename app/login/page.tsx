@@ -32,7 +32,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${location.origin}/describe`,
+        emailRedirectTo: `${location.origin}/auth/callback?next=/describe`,
       },
     });
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
                 await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {
-                    redirectTo: `${window.location.origin}/describe`
+                    redirectTo: `${window.location.origin}/auth/callback?next=/describe`
                   }
                 });
               }
