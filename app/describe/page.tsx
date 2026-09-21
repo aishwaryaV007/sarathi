@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { saveProject } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -230,6 +231,7 @@ export function validateStep2Form(values: {
 
 export default function DescribePage() {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   // Step 1: Core Profile (starts empty)
@@ -443,7 +445,7 @@ export default function DescribePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setStep2Submitted(true);
     const s1Errs = validateStep1();
     if (Object.keys(s1Errs).length > 0) {
@@ -476,6 +478,7 @@ export default function DescribePage() {
       return;
     }
 
+    setIsSubmitting(true);
     const selectedActivityDef = ACTIVITY_OPTIONS.find((a) => a.id === activity);
     const profile = {
       description: description.trim() || selectedActivityDef?.label || "Commercial Enterprise",
@@ -511,6 +514,12 @@ export default function DescribePage() {
     };
 
     sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
+    
+    const res = await saveProject(profile);
+    if (res.success && res.projectId) {
+      sessionStorage.setItem("sarathi_project_id", res.projectId);
+    }
+    
     router.push("/checklist");
   };
 
@@ -1529,10 +1538,11 @@ export default function DescribePage() {
 
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={handleSubmit}
-                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 disabled:opacity-70 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm cursor-pointer"
                   >
-                    Generate Dynamic Checklist &rarr;
+                    {isSubmitting ? "Generating..." : "Generate Dynamic Checklist \u2192"}
                   </button>
                 </div>
               </div>

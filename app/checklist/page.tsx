@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getLatestProject } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -63,13 +64,21 @@ export default function ChecklistPage() {
   useEffect(() => {
     async function fetchChecklist() {
       try {
+        let profile;
         const raw = sessionStorage.getItem("sarathi_profile");
-        if (!raw) {
-          setError("No business profile found. Please start from the discovery questionnaire.");
-          setLoading(false);
-          return;
+        if (raw) {
+          profile = JSON.parse(raw);
+        } else {
+          const projectRes = await getLatestProject();
+          if (projectRes.success && projectRes.profile) {
+            profile = projectRes.profile;
+            sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
+          } else {
+            setError("No business profile found. Please start from the discovery questionnaire.");
+            setLoading(false);
+            return;
+          }
         }
-        const profile = JSON.parse(raw);
 
         const res = await fetch("/api/checklist", {
           method: "POST",
