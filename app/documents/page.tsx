@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, FileText, Eye, Upload, Plus, Clock, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/db";
+import { useLanguage } from "@/lib/i18n/context";
 
 type DocStatus = "Verified" | "Pending";
 
@@ -25,6 +26,7 @@ const REQUIRED_DOCS = [
 ];
 
 export default function DocumentsPage() {
+  const { t } = useLanguage();
   const [documents, setDocuments] = useState<VaultDocument[]>(
     REQUIRED_DOCS.map(name => ({ name, status: "Pending", source: "Upload required" }))
   );
@@ -146,10 +148,10 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="mb-9">
           <h1 className="font-serif font-bold text-[32px] text-sarathi-ink tracking-[-0.2px] mb-2">
-            My Documents Vault
+            {t("documents.title")}
           </h1>
           <p className="text-[16px] text-sarathi-muted">
-            Upload once — reused across every single government application.
+            {t("documents.subtitle")}
           </p>
         </div>
 
@@ -167,12 +169,12 @@ export default function DocumentsPage() {
                   {doc.status === "Verified" ? (
                     <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 px-2.5 py-1 rounded-md">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Verified
+                      {t("documents.verified")}
                     </div>
                   ) : (
                     <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[#b85c00] bg-[#fff6ed] px-2.5 py-1 rounded-md">
                       <Clock className="w-3.5 h-3.5" />
-                      Pending
+                      {t("documents.pending")}
                     </div>
                   )}
                 </div>
@@ -189,11 +191,11 @@ export default function DocumentsPage() {
                     <>
                       <button onClick={() => viewFile(doc.file_path)} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-blue hover:underline">
                         <Eye className="w-4 h-4" />
-                        View File
+                        {t("documents.viewFile")}
                       </button>
                       <button onClick={() => handleUploadClick(doc.name)} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-muted hover:text-sarathi-ink transition-colors">
                         <Upload className="w-4 h-4" />
-                        Replace
+                        {t("documents.replace")}
                       </button>
                     </>
                   ) : (
@@ -205,12 +207,12 @@ export default function DocumentsPage() {
                       {isUploading === doc.name ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Uploading...
+                          {t("documents.uploading")}
                         </>
                       ) : (
                         <>
                           <Upload className="w-4 h-4" />
-                          Upload Document
+                          {t("documents.uploadDoc")}
                         </>
                       )}
                     </button>
@@ -226,10 +228,10 @@ export default function DocumentsPage() {
               <Plus className="w-6 h-6 text-sarathi-blue" />
             </div>
             <h3 className="font-bold text-[16px] text-sarathi-ink group-hover:text-sarathi-blue transition-colors">
-              Add New Document
+              {t("documents.addNew")}
             </h3>
             <p className="text-[13.5px] text-sarathi-muted mt-1.5 max-w-[200px]">
-              Upload additional proofs to your secure vault
+              {t("documents.addNewDesc")}
             </p>
           </button>
 
