@@ -1,6 +1,47 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/db";
+import { LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createClient();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email ?? null);
+      setLoading(false);
+
+      // Listen for auth state changes (login/logout)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUserEmail(session?.user?.email ?? null);
+      });
+
+      return () => subscription.unsubscribe();
+    }
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+      setUserEmail(null);
+      router.push("/");
+      router.refresh();
+    }
+  };
+
   return (
     <>
 
@@ -28,9 +69,27 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-[10px]">
-            <Link href="/login" className="hidden sm:inline-flex items-center justify-center border-[1.5px] border-sarathi-line-strong text-sarathi-blue font-semibold px-[18px] py-[10px] rounded-[8px] hover:border-sarathi-blue hover:bg-sarathi-blue-050 transition-colors">
-              Login
-            </Link>
+            {loading ? (
+              <div className="w-[80px] h-[40px] bg-sarathi-page rounded-[8px] animate-pulse" />
+            ) : userEmail ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-[14px] text-sarathi-ink font-medium bg-sarathi-page border border-sarathi-line px-3 py-2 rounded-[8px]">
+                  <User className="w-4 h-4 text-sarathi-blue" />
+                  <span className="max-w-[150px] truncate">{userEmail}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center justify-center gap-1.5 border-[1.5px] border-sarathi-line-strong text-sarathi-muted font-semibold px-[14px] py-[10px] rounded-[8px] hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </>
+            ) : (
+              <Link href="/login" className="hidden sm:inline-flex items-center justify-center border-[1.5px] border-sarathi-line-strong text-sarathi-blue font-semibold px-[18px] py-[10px] rounded-[8px] hover:border-sarathi-blue hover:bg-sarathi-blue-050 transition-colors">
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </header>
