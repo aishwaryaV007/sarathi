@@ -1,49 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Leaf, Building, FileKey, CalendarClock, ArrowRight, HelpCircle, Plus } from "lucide-react";
-
-const applications = [
-  {
-    id: "fssai",
-    name: "FSSAI Licence",
-    dept: "FSSAI",
-    status: "Approved",
-    statusType: "green",
-    text: "Cleared",
-    progress: 100,
-    icon: FileText
-  },
-  {
-    id: "cte",
-    name: "Consent to Establish",
-    dept: "TSPCB",
-    status: "Under review",
-    statusType: "blue",
-    text: "9 days left in SLA",
-    progress: 55,
-    icon: Leaf
-  },
-  {
-    id: "factory",
-    name: "Factory Licence",
-    dept: "Dept. of Factories",
-    status: "Action needed",
-    statusType: "amber",
-    text: "Upload 1 document",
-    progress: 80,
-    icon: Building
-  },
-  {
-    id: "gst",
-    name: "GST Registration",
-    dept: "CBIC",
-    status: "Under review",
-    statusType: "blue",
-    text: "4 days left",
-    progress: 40,
-    icon: FileKey
-  }
-];
+import { createClient } from "@/utils/supabase/server";
 
 function getStatusStyles(type: string) {
   if (type === "green") return "bg-sarathi-green-050 text-sarathi-green border border-[#bbf7d0]";
@@ -57,7 +15,24 @@ function getProgressColor(type: string) {
   return "bg-sarathi-blue";
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let userApplications: any[] = [];
+  
+  if (user) {
+    const { data } = await supabase
+      .from("applications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("submitted_at", { ascending: false });
+    
+    if (data) {
+      userApplications = data;
+    }
+  }
+
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
       <div className="max-w-[1120px] mx-auto">
@@ -85,41 +60,52 @@ export default function DashboardPage() {
           
           {/* Main List */}
           <div className="space-y-4">
-            {applications.map((app) => (
-              <Link key={app.id} href={`/apply/${app.id}`} className="block">
-                <Card className="border-sarathi-line shadow-sm rounded-[12px] hover:border-sarathi-blue-100 transition-colors cursor-pointer bg-white hover:shadow-md">
-                  <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-full bg-sarathi-page border border-sarathi-line flex items-center justify-center shrink-0">
-                        <app.icon className="w-5 h-5 text-sarathi-blue" />
+            {userApplications.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-[12px] border border-sarathi-line shadow-sm">
+                <FileText className="w-12 h-12 text-sarathi-line-strong mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-sarathi-ink">No applications yet</h3>
+                <p className="text-sarathi-muted mb-6">Start your approval journey to see your progress here.</p>
+                <Link href="/describe" className="inline-flex items-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[14.5px] h-[44px] px-6 rounded-[8px] transition-colors">
+                  Get Started
+                </Link>
+              </div>
+            ) : (
+              userApplications.map((app) => (
+                <Link key={app.id} href={`/apply/${app.approval_id}`} className="block">
+                  <Card className="border-sarathi-line shadow-sm rounded-[12px] hover:border-sarathi-blue-100 transition-colors cursor-pointer bg-white hover:shadow-md">
+                    <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-full bg-sarathi-page border border-sarathi-line flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-sarathi-blue" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-[16px] text-sarathi-ink group-hover:text-sarathi-blue transition-colors">{app.approval_name}</div>
+                          <div className="text-[13.5px] text-sarathi-muted mt-0.5">{app.department}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-bold text-[16px] text-sarathi-ink group-hover:text-sarathi-blue transition-colors">{app.name}</div>
-                        <div className="text-[13.5px] text-sarathi-muted mt-0.5">{app.dept}</div>
+                      
+                      <div className="flex flex-col w-full md:w-[260px] shrink-0">
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${getStatusStyles(app.status === 'approved' ? 'green' : 'blue')}`}>
+                            {app.status.replace("_", " ")}
+                          </span>
+                          <span className="text-[13px] font-semibold text-sarathi-muted">
+                            Submitted
+                          </span>
+                        </div>
+                        {/* Progress Bar */}
+                        <div className="w-full h-2 rounded-full bg-sarathi-page border border-sarathi-line-strong/50 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(app.status === 'approved' ? 'green' : 'blue')}`}
+                            style={{ width: app.status === 'approved' ? '100%' : '50%' }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex flex-col w-full md:w-[260px] shrink-0">
-                      <div className="flex items-center justify-between w-full mb-2">
-                        <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${getStatusStyles(app.statusType)}`}>
-                          {app.status}
-                        </span>
-                        <span className="text-[13px] font-semibold text-sarathi-muted">
-                          {app.text}
-                        </span>
-                      </div>
-                      {/* Progress Bar */}
-                      <div className="w-full h-2 rounded-full bg-sarathi-page border border-sarathi-line-strong/50 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(app.statusType)}`}
-                          style={{ width: `${app.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
 
           {/* Right Sidebar */}
@@ -132,26 +118,8 @@ export default function DashboardPage() {
                 Upcoming renewals
               </div>
               <CardContent className="p-5">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3 pb-4 border-b border-sarathi-line">
-                    <div>
-                      <div className="text-[14px] font-semibold text-sarathi-ink">Consent to Operate</div>
-                      <div className="text-[12.5px] text-sarathi-muted mt-0.5">TSPCB</div>
-                    </div>
-                    <div className="text-[12px] font-bold text-sarathi-amber bg-sarathi-amber-050 border border-[#f0dcb8] px-2 py-0.5 rounded text-center shrink-0">
-                      8 months
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[14px] font-semibold text-sarathi-ink">Fire NOC</div>
-                      <div className="text-[12.5px] text-sarathi-muted mt-0.5">Disaster Response & Fire Dept</div>
-                    </div>
-                    <div className="text-[12px] font-bold text-sarathi-muted bg-sarathi-page border border-sarathi-line px-2 py-0.5 rounded text-center shrink-0">
-                      11 months
-                    </div>
-                  </div>
+                <div className="text-sm text-sarathi-muted">
+                  No upcoming renewals for your current applications.
                 </div>
               </CardContent>
             </Card>

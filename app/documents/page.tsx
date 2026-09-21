@@ -1,47 +1,148 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, FileText, Eye, Upload, Plus, Clock, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/db";
 
 type DocStatus = "Verified" | "Pending";
 
 interface VaultDocument {
+  id?: string;
   name: string;
   status: DocStatus;
   source: string;
+  file_path?: string;
 }
 
+const REQUIRED_DOCS = [
+  "PAN Card",
+  "Aadhaar Card",
+  "Bank Account Proof",
+  "Premises Proof",
+  "Project report",
+  "Site plan"
+];
+
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<VaultDocument[]>([
-    { name: "PAN Card", status: "Verified", source: "DigiLocker" },
-    { name: "Aadhaar Card", status: "Verified", source: "DigiLocker" },
-    { name: "Bank Account Proof", status: "Pending", source: "Upload required" },
-    { name: "Premises Proof", status: "Pending", source: "Upload required" },
-  ]);
-
+  const [documents, setDocuments] = useState<VaultDocument[]>(
+    REQUIRED_DOCS.map(name => ({ name, status: "Pending", source: "Upload required" }))
+  );
+  
   const [isUploading, setIsUploading] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  const supabase = createClient();
 
-  const handleSimulatedUpload = (docName: string) => {
-    setIsUploading(docName);
+  useEffect(() => {
+    async function loadDocuments() {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("documents")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (data) {
+        setDocuments(docs => {
+          return docs.map(doc => {
+            const uploadedDoc = data.find(d => d.doc_type === doc.name);
+            if (uploadedDoc) {
+              return {
+                ...doc,
+                id: uploadedDoc.id,
+                status: "Verified",
+                source: "Uploaded",
+                file_path: uploadedDoc.file_path
+              };
+            }
+            return doc;
+          });
+        });
+      }
+    }
+    loadDocuments();
+  }, [supabase]);
+
+  const handleUploadClick = (docName: string) => {
+    setSelectedDocType(docName);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedDocType || !supabase) return;
     
-    // Simulate network upload delay
-    setTimeout(() => {
+    setIsUploading(selectedDocType);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("You must be logged in to upload documents.");
+      setIsUploading(null);
+      return;
+    }
+
+    const filePath = `${user.id}/${Date.now()}_${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error(uploadError);
+      alert("Error uploading file: " + uploadError.message);
+      setIsUploading(null);
+      return;
+    }
+
+    const { error: dbError } = await supabase
+      .from('documents')
+      .upsert({
+        user_id: user.id,
+        doc_type: selectedDocType,
+        file_path: filePath,
+        status: 'verified'
+      }, { onConflict: "user_id, doc_type" });
+
+    if (dbError) {
+      console.error(dbError);
+      alert("Error saving document record: " + dbError.message);
+    } else {
       setDocuments(docs => 
         docs.map(doc => 
-          doc.name === docName 
-            ? { ...doc, status: "Verified", source: "Uploaded manually" } 
+          doc.name === selectedDocType 
+            ? { ...doc, status: "Verified", source: "Uploaded manually", file_path: filePath } 
             : doc
         )
       );
-      setIsUploading(null);
-    }, 1500);
+    }
+    
+    setIsUploading(null);
+    setSelectedDocType(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const viewFile = async (filePath?: string) => {
+    if (!filePath || !supabase) return;
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(filePath, 60);
+    if (error) {
+      alert("Could not load file.");
+    } else if (data) {
+      window.open(data.signedUrl, "_blank");
+    }
   };
 
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
       <div className="max-w-[1120px] mx-auto">
-        
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+          onChange={handleFileChange}
+        />
         {/* Header */}
         <div className="mb-9">
           <h1 className="font-serif font-bold text-[32px] text-sarathi-ink tracking-[-0.2px] mb-2">
@@ -86,18 +187,18 @@ export default function DocumentsPage() {
                 <div className="mt-auto pt-4 border-t border-sarathi-line flex items-center justify-between">
                   {doc.status === "Verified" ? (
                     <>
-                      <button className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-blue hover:underline">
+                      <button onClick={() => viewFile(doc.file_path)} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-blue hover:underline">
                         <Eye className="w-4 h-4" />
                         View File
                       </button>
-                      <button className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-muted hover:text-sarathi-ink transition-colors">
+                      <button onClick={() => handleUploadClick(doc.name)} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-sarathi-muted hover:text-sarathi-ink transition-colors">
                         <Upload className="w-4 h-4" />
                         Replace
                       </button>
                     </>
                   ) : (
                     <button 
-                      onClick={() => handleSimulatedUpload(doc.name)}
+                      onClick={() => handleUploadClick(doc.name)}
                       disabled={isUploading === doc.name}
                       className="inline-flex items-center justify-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white text-[13.5px] font-semibold px-4 py-2 rounded-md transition-colors w-full disabled:opacity-70"
                     >
