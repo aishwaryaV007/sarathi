@@ -18,6 +18,15 @@ export default function LoginPage() {
     setMessage("");
 
     const supabase = createClient();
+    if (!supabase) {
+      // Demo mode fallback when Supabase is not configured
+      setMessage("Demo mode active — signing you in...");
+      setTimeout(() => {
+        router.push("/describe");
+      }, 700);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -28,9 +37,8 @@ export default function LoginPage() {
     if (error) {
       setMessage("Error: " + error.message);
     } else {
-      // For the demo, we immediately push them to describe as if they logged in
-      // In a real hackathon demo, you might just fake the redirect here so the judges don't have to check email
-      setMessage("Check your email for the login link!");
+      // For demo, immediately push them to describe
+      setMessage("Check your email for the login link! Redirecting...");
       setTimeout(() => {
          router.push("/describe");
       }, 1500);
@@ -92,8 +100,15 @@ export default function LoginPage() {
             )}
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center pb-8 pt-0 px-8">
-          <p className="text-[13.5px] text-sarathi-faint text-center">
+        <CardFooter className="flex flex-col gap-2.5 justify-center pb-8 pt-0 px-8">
+          <button 
+            type="button"
+            onClick={() => router.push("/describe")}
+            className="text-[13.5px] font-semibold text-sarathi-blue hover:underline cursor-pointer"
+          >
+            Skip for demo (continue as guest) &rarr;
+          </button>
+          <p className="text-[13px] text-sarathi-faint text-center">
             New here? You&apos;ll set up your profile after signing in.
           </p>
         </CardFooter>
