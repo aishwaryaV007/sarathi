@@ -1,4 +1,4 @@
-import { generateChecklist, resolveBusinessType } from "../lib/rules-engine";
+import { generateChecklist, resolveBusinessType, resolveLocationAuthority } from "../lib/rules-engine";
 import type { BusinessProfile } from "../lib/types";
 
 function make(partial: Partial<BusinessProfile>): BusinessProfile {
@@ -61,3 +61,32 @@ for (const s of scenarios) {
   console.log(`  ${r.businessLabel} · MSME=${r.msme} · Pollution=${r.pollution} · Factory=${r.factoryApplies} · ${r.approvals.length} approvals`);
   console.log("   " + r.approvals.map((a) => a.id).join(", "));
 }
+
+console.log("\n=== Location Authority Resolution Tests ===");
+const hydLoc = resolveLocationAuthority("telangana", "Hyderabad");
+console.log(`  Hyderabad -> Authority: ${hydLoc.tradeAuthority} (${hydLoc.authorityType}) | Portal: ${hydLoc.tradePortal}`);
+
+const ghatLoc = resolveLocationAuthority("telangana", "Ghatkesar");
+console.log(`  Ghatkesar -> Authority: ${ghatLoc.tradeAuthority} (${ghatLoc.authorityType}) | Portal: ${ghatLoc.tradePortal}`);
+
+const ruralLoc = resolveLocationAuthority("telangana", "Ankushapur Gram Panchayat");
+console.log(`  Rural GP  -> Authority: ${ruralLoc.tradeAuthority} (${ruralLoc.authorityType}) | Portal: ${ruralLoc.tradePortal}`);
+
+console.log("\n=== Conditional Alcohol / Bar Trigger Test ===");
+const barProfile = make({
+  businessType: "restaurant",
+  city: "Banjara Hills, Hyderabad",
+  servesAlcohol: true,
+  workers: 15,
+});
+const barResult = generateChecklist(barProfile);
+const hasExcise = barResult.approvals.some((a) => a.id === "excise_licence");
+const tradeApp = barResult.approvals.find((a) => a.id === "trade_licence");
+console.log(`  Bar & Restaurant in Banjara Hills (GHMC):`);
+console.log(`    Excise Licence triggered: ${hasExcise}`);
+console.log(`    Trade Authority: ${tradeApp?.department} (${tradeApp?.authorityType})`);
+console.log(`    Trade Portal: ${tradeApp?.portalUrl}`);
+
+console.log("\n=== Dependency Sequence Verification ===");
+const stages = barResult.approvals.map((a) => `[Stage ${a.stage}: ${a.name}]`);
+console.log("  Execution Order:\n    " + stages.join("\n    "));

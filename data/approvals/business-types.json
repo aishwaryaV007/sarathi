@@ -1,135 +1,114 @@
 {
-  "_comment": "Maps each business type to: a human label, its CPCB pollution category (white/green/orange/red — decides pollution consents), the sector-specific approval ids it needs (from catalog.json), and default flags used by the rules engine. To add a business type, copy an entry and adjust. 'aliases' help the AI/keyword matcher map free text (e.g. 'mineral water', 'RO plant') to this type. Universal approvals (GST, Udyam, Trade Licence, Shops) and trigger-based ones (Factory, Fire, EPF/ESI, Power, Groundwater) are added automatically by the engine — do NOT list them here.",
+  "_comment": "Maps each business type to: a human label, its CPCB pollution category (white/green/orange/red), its baseApprovals (the fundamental approvals triggered for this type), sectorApprovals, default flags, and keyword aliases. Adding a new business type = add an entry here, no code changes required.",
 
+  "restaurant": {
+    "label": "Restaurant / Hotel / Cloud Kitchen",
+    "pollution": "green",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "fssai", "eating_house"],
+    "sectorApprovals": ["fssai", "eating_house"],
+    "defaults": { "handlesFood": true },
+    "aliases": ["restaurant", "hotel", "cafe", "cloud kitchen", "dhaba", "mess", "canteen", "eatery", "food business", "bakery", "fast food"]
+  },
   "water_plant": {
     "label": "Packaged Drinking Water Plant",
     "pollution": "orange",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "bis_isi", "fssai", "groundwater_noc"],
     "sectorApprovals": ["bis_isi", "fssai", "groundwater_noc"],
     "defaults": { "handlesFood": true, "usesGroundwater": true, "manufacturing": true },
     "aliases": ["water plant", "packaged drinking water", "mineral water", "ro plant", "water bottling", "packaged water"]
   },
-  "rice_mill": {
-    "label": "Rice / Flour / Dal Mill",
-    "pollution": "orange",
-    "sectorApprovals": ["fssai"],
-    "defaults": { "handlesFood": true, "manufacturing": true },
-    "aliases": ["rice mill", "flour mill", "atta mill", "dal mill", "grain mill", "milling"]
-  },
-  "oil_mill": {
-    "label": "Oil Mill / Oil Extraction Unit",
-    "pollution": "orange",
-    "sectorApprovals": ["fssai"],
-    "defaults": { "handlesFood": true, "manufacturing": true },
-    "aliases": ["oil mill", "oil extraction", "ghani", "edible oil"]
-  },
-  "food_processing": {
-    "label": "Food Processing / Packaging Unit",
-    "pollution": "orange",
-    "sectorApprovals": ["fssai"],
-    "defaults": { "handlesFood": true, "manufacturing": true },
-    "aliases": ["food processing", "spice", "masala", "pickle", "snacks", "namkeen", "bakery unit", "sweets manufacturing"]
-  },
-  "dairy": {
-    "label": "Dairy / Milk Processing Unit",
-    "pollution": "orange",
-    "sectorApprovals": ["fssai"],
-    "defaults": { "handlesFood": true, "manufacturing": true },
-    "aliases": ["dairy", "milk processing", "milk plant", "paneer", "curd"]
-  },
-  "restaurant": {
-    "label": "Restaurant / Hotel / Cloud Kitchen",
-    "pollution": "green",
-    "sectorApprovals": ["fssai", "eating_house"],
+  "kirana": {
+    "label": "Kirana / Grocery Store",
+    "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "fssai", "legal_metrology"],
+    "sectorApprovals": ["fssai", "legal_metrology"],
     "defaults": { "handlesFood": true },
-    "aliases": ["restaurant", "hotel", "cafe", "cloud kitchen", "dhaba", "mess", "canteen", "eatery", "food business"]
+    "aliases": ["kirana", "grocery", "general store", "provision store", "supermarket", "departmental store", "daily needs"]
   },
   "pharmacy": {
     "label": "Pharmacy / Medical Store",
     "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "drug_licence"],
     "sectorApprovals": ["drug_licence"],
     "defaults": {},
     "aliases": ["pharmacy", "medical store", "chemist", "drug store", "medical shop", "medicine shop"]
   },
-  "kirana": {
-    "label": "Kirana / Grocery Store",
-    "pollution": "white",
-    "sectorApprovals": ["fssai", "legal_metrology"],
-    "defaults": { "handlesFood": true },
-    "aliases": ["kirana", "grocery", "general store", "provision store", "supermarket", "departmental store"]
-  },
-  "supermarket": {
-    "label": "Supermarket / Retail Chain",
-    "pollution": "white",
-    "sectorApprovals": ["fssai", "legal_metrology"],
-    "defaults": { "handlesFood": true },
-    "aliases": ["supermarket", "hypermarket", "retail chain", "big bazaar", "mart"]
-  },
   "cloth_store": {
     "label": "Cloth / Garment Store",
     "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": {},
-    "aliases": ["cloth store", "garment shop", "clothing", "textile shop", "boutique", "readymade", "apparel"]
+    "aliases": ["cloth store", "garment shop", "clothing", "textile shop", "boutique", "readymade", "apparel", "saree shop"]
   },
-  "garment_unit": {
-    "label": "Garment / Textile Stitching Unit",
-    "pollution": "green",
-    "sectorApprovals": [],
-    "defaults": { "manufacturing": true },
-    "aliases": ["garment unit", "stitching unit", "tailoring unit", "textile unit", "apparel manufacturing"]
-  },
-  "plastic_unit": {
-    "label": "Plastic Products Manufacturing Unit",
+  "rice_mill": {
+    "label": "Rice / Flour / Dal Mill",
     "pollution": "orange",
-    "sectorApprovals": [],
-    "defaults": { "manufacturing": true },
-    "aliases": ["plastic", "plastic products", "injection moulding", "packaging manufacturing"]
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "fssai"],
+    "sectorApprovals": ["fssai"],
+    "defaults": { "handlesFood": true, "manufacturing": true },
+    "aliases": ["rice mill", "flour mill", "atta mill", "dal mill", "grain mill", "milling"]
+  },
+  "food_processing": {
+    "label": "Food Processing / Packaging Unit",
+    "pollution": "orange",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "fssai"],
+    "sectorApprovals": ["fssai"],
+    "defaults": { "handlesFood": true, "manufacturing": true },
+    "aliases": ["food processing", "spice", "masala", "pickle", "snacks", "namkeen", "bakery unit", "sweets manufacturing"]
   },
   "chemical_unit": {
     "label": "Chemical / Paint Manufacturing Unit",
     "pollution": "red",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": { "manufacturing": true },
-    "aliases": ["chemical", "paint", "dye", "solvent", "acid"]
+    "aliases": ["chemical", "paint", "dye", "solvent", "acid", "petrochemical"]
   },
   "engineering_unit": {
     "label": "Engineering / Metal Fabrication Unit",
     "pollution": "orange",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": { "manufacturing": true },
-    "aliases": ["engineering", "fabrication", "metal", "welding unit", "cnc", "machining"]
+    "aliases": ["engineering", "fabrication", "metal", "welding unit", "cnc", "machining", "workshop"]
   },
-  "printing_press": {
-    "label": "Printing / Packaging Press",
-    "pollution": "green",
+  "plastic_unit": {
+    "label": "Plastic Products Manufacturing Unit",
+    "pollution": "orange",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": { "manufacturing": true },
-    "aliases": ["printing", "printing press", "flex printing", "packaging press"]
+    "aliases": ["plastic", "plastic products", "injection moulding", "packaging manufacturing", "polythene"]
   },
   "liquor_shop": {
-    "label": "Liquor / Wine Store",
+    "label": "Liquor Store / Wine Shop / Bar",
     "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "excise_licence"],
     "sectorApprovals": ["excise_licence"],
-    "defaults": {},
-    "aliases": ["liquor shop", "wine shop", "bar", "alcohol", "liquor store"]
+    "defaults": { "servesAlcohol": true },
+    "aliases": ["liquor shop", "wine shop", "bar", "alcohol", "liquor store", "pub", "beer parlour"]
   },
   "salon": {
     "label": "Salon / Beauty Parlour",
     "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": {},
-    "aliases": ["salon", "beauty parlour", "spa", "barber", "hair"]
+    "aliases": ["salon", "beauty parlour", "spa", "barber", "hair", "wellness centre"]
   },
-  "clinic": {
-    "label": "Clinic / Diagnostic Centre",
+  "supermarket": {
+    "label": "Supermarket / Retail Chain",
     "pollution": "white",
-    "sectorApprovals": [],
-    "defaults": {},
-    "aliases": ["clinic", "diagnostic", "lab", "nursing home", "hospital"]
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops", "fssai", "legal_metrology"],
+    "sectorApprovals": ["fssai", "legal_metrology"],
+    "defaults": { "handlesFood": true },
+    "aliases": ["supermarket", "hypermarket", "retail chain", "big bazaar", "mart"]
   },
   "generic": {
     "label": "General Business",
     "pollution": "white",
+    "baseApprovals": ["udyam", "gst", "trade_licence", "shops"],
     "sectorApprovals": [],
     "defaults": {},
     "aliases": []

@@ -18,6 +18,9 @@ export interface BusinessProfile {
   entityType: "proprietor" | "partnership" | "company" | "notyet";
   /** true if the user marked this as a startup seeking DPIIT recognition. */
   isStartup?: boolean;
+  /** true if business plans to serve/sell liquor or alcohol. */
+  servesAlcohol?: boolean;
+  alcohol?: boolean;
 }
 
 /** A single approval, hydrated from catalog.json with runtime context filled in. */
@@ -34,6 +37,12 @@ export interface Approval {
   reason: string;
   /** Pollution category tag, only set on pollution consents. */
   category?: "white" | "green" | "orange" | "red";
+  /** Stage sequence (1: Entity & Registration, 2: Premises & Infrastructure, 3: Operational Licences, 4: Labour & Compliance) */
+  stage?: number;
+  stageName?: string;
+  dependsOn?: string[];
+  locationDependent?: boolean;
+  authorityType?: "GHMC" | "CDMA" | "Panchayat" | "State" | "Central";
 }
 
 export type MsmeCategory = "Micro" | "Small" | "Medium" | "Large";
