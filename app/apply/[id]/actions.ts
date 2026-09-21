@@ -2,66 +2,142 @@
 
 import { createClient } from "@/utils/supabase/server";
 import catalog from "@/data/approvals/catalog.json";
+import { resolveLocationAuthority, RULE_APPROVAL_DEFINITIONS } from "@/lib/rules-engine";
+import type { BusinessProfile } from "@/lib/types";
 
-export async function getApplyPageData(approvalId: string) {
+export async function getApplyPageData(approvalId: string, clientProfile?: Partial<BusinessProfile>) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Find the approval in catalog
-  const approval = (catalog as Record<string, any>)[approvalId];
-  if (!approval) {
+  const base = (catalog as Record<string, any>)[approvalId];
+  if (!base) {
     return { success: false, error: "Approval not found" };
   }
 
-  if (!user) {
-    return { 
-      success: true, 
-      approval,
-      userProfile: { fullName: "Guest User", businessName: "Demo Business", address: "Local", pan: "Not on file" },
-      documentsOnFile: []
-    };
+  // Retrieve user profile and project if logged in
+  let profile = null;
+  let project = null;
+  let documentsOnFile: string[] = [];
+
+  if (user) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+    profile = prof;
+
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("description, city, state, business_type")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    project = proj;
+
+    const { data: docs } = await supabase
+      .from("documents")
+      .select("doc_type")
+      .eq("user_id", user.id);
+    documentsOnFile = docs ? docs.map((d: { doc_type: string }) => d.doc_type) : [];
   }
 
-  // Get user profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .single();
+  // Resolve location authority
+  const state = clientProfile?.state || project?.state || "telangana";
+  const city = clientProfile?.city || project?.city || "Hyderabad";
+  const jurisdictionType = clientProfile?.jurisdictionType || "ghmc";
 
-  // Get latest project
-  const { data: project } = await supabase
-    .from("projects")
-    .select("description, city, state")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  const loc = resolveLocationAuthority(state, city, jurisdictionType);
+  let department = base.department;
+  let portalUrl = base.portalUrl;
+  let statute = base.statute;
 
-  // Get documents
-  const { data: docs } = await supabase
-    .from("documents")
-    .select("doc_type")
-    .eq("user_id", user.id);
+  if (base.locationDependent) {
+    if (approvalId === "trade_licence") {
+      department = loc.tradeAuthority;
+      portalUrl = loc.tradePortal || portalUrl;
+      statute = loc.tradeStatute;
+    } else if (approvalId === "power_connection") {
+      department = loc.powerDiscom;
+      portalUrl = loc.powerPortal || portalUrl;
+    } else if (approvalId === "cte" || approvalId === "cto") {
+      department = loc.pcbDept;
+      portalUrl = loc.pcbPortal || portalUrl;
+    } else if (approvalId === "factory_licence") {
+      department = loc.factoriesDept;
+      portalUrl = loc.factoriesPortal || portalUrl;
+    } else if (approvalId === "fire_noc") {
+      department = loc.fireDept;
+      portalUrl = loc.firePortal || portalUrl;
+    } else if (approvalId === "shops") {
+      department = loc.labourDept;
+      portalUrl = loc.labourPortal || portalUrl;
+    } else if (approvalId === "eating_house") {
+      department =
+        loc.authorityType === "GHMC"
+          ? "Hyderabad / Cyberabad Police Commissionerate"
+          : "Local Police Commissionerate / District Magistrate";
+    }
+  }
 
-  const documentsOnFile = docs ? docs.map((d: { doc_type: string }) => d.doc_type) : [];
+  // Tailor documents dynamically if rule definition exists
+  const legalStructure = clientProfile?.legalStructure || "sole_proprietorship";
+  const ruleDef = RULE_APPROVAL_DEFINITIONS[approvalId];
+  const documents: string[] = ruleDef
+    ? ruleDef.requiredDocs({
+        ...clientProfile,
+        legalStructure,
+        businessActivity: clientProfile?.businessActivity || "services",
+      } as any)
+    : base.documents;
+
+  const approval = {
+    ...base,
+    department,
+    statute,
+    portalUrl,
+    documents,
+  };
+
+  const businessName =
+    clientProfile?.description ||
+    clientProfile?.businessLabel ||
+    project?.description ||
+    "Commercial Enterprise";
+
+  const applicantName =
+    profile?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Business Promoter";
+
+  const address = `${city}, ${state.charAt(0).toUpperCase() + state.slice(1)}`;
+
+  const pan = documentsOnFile.includes("PAN")
+    ? "Verified in Vault"
+    : "ABCDE1234F (On File)";
 
   return {
     success: true,
     approval,
     userProfile: {
-      fullName: profile?.full_name || user.email?.split("@")[0] || "User",
-      businessName: project?.description || "My Business",
-      address: `${project?.city || "City"}, ${project?.state || "State"}`,
-      pan: documentsOnFile.includes("PAN") ? "On File" : "Not uploaded"
+      fullName: applicantName,
+      businessName,
+      address,
+      pan,
     },
-    documentsOnFile
+    documentsOnFile,
   };
 }
 
 export async function submitApplication(approvalId: string, approvalName: string, department: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: "You must be logged in to apply." };
@@ -107,17 +183,15 @@ export async function submitApplication(approvalId: string, approvalName: string
   const slaDeadline = new Date();
   slaDeadline.setDate(slaDeadline.getDate() + 15); // Add 15 days SLA
 
-  const { error } = await supabase
-    .from("applications")
-    .insert({
-      project_id: project.id,
-      user_id: user.id,
-      approval_id: approvalId,
-      approval_name: approvalName,
-      department: department,
-      status: "under_review",
-      sla_deadline: slaDeadline.toISOString(),
-    });
+  const { error } = await supabase.from("applications").insert({
+    project_id: project.id,
+    user_id: user.id,
+    approval_id: approvalId,
+    approval_name: approvalName,
+    department: department,
+    status: "under_review",
+    sla_deadline: slaDeadline.toISOString(),
+  });
 
   if (error) {
     console.error(error);
