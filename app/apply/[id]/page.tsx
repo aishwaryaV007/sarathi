@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Shield, CheckCircle2, ArrowLeft, Upload, Loader2, Check, X, FileSearch, Fingerprint } from "lucide-react";
 
+import { submitApplication } from "./actions";
+
 type ValidationStep = 
   | "idle"
   | "scanning_vault"
@@ -12,7 +14,7 @@ type ValidationStep =
   | "final_check"
   | "verified";
 
-export default function ApplyPage() {
+export default function ApplyPage({ params }: { params: { id: string } }) {
   const [submitState, setSubmitState] = useState<"idle" | "validating" | "success">("idle");
   const [valStep, setValStep] = useState<ValidationStep>("idle");
   
@@ -50,10 +52,18 @@ export default function ApplyPage() {
           setValidationError("Missing Project Report. Please upload it to your Vault.");
         } else {
           setValStep("verified");
-          // Hold on verified for 1.5s then show success
-          setTimeout(() => {
-            setSubmitState("success");
-          }, 1500);
+          // Call the server action to save to Supabase
+          submitApplication(params.id, "Demo Approval", "Demo Dept").then((res) => {
+            if (res.error) {
+               setValidationError(res.error);
+               setValStep("final_check"); // revert
+            } else {
+               // Hold on verified for 1.5s then show success
+               setTimeout(() => {
+                 setSubmitState("success");
+               }, 1500);
+            }
+          });
         }
       }, 1500);
     }

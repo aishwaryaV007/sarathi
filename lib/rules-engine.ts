@@ -39,6 +39,7 @@ interface CatalogEntry {
   documents: string[];
   icon: string;
   portalUrl: string;
+  sourceUrl?: string;
   stage?: number;
   stageName?: string;
   dependsOn?: string[];
@@ -1132,6 +1133,7 @@ function hydrateApproval(
     documents: base.documents,
     icon: base.icon,
     portalUrl,
+    sourceUrl: base.sourceUrl,
     applicability: evalResult.status,
     reason: evalResult.reason,
     triggeredBy: evalResult.triggeredBy,
