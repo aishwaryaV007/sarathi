@@ -63,7 +63,7 @@ export function Header() {
 
           <nav className="hidden md:flex items-center gap-1">
             <Link href="/" className="text-sarathi-blue font-semibold bg-sarathi-blue-050 text-[15px] px-[14px] py-[9px] rounded-[7px]">Home</Link>
-            <Link href="/dashboard" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">Track Applications</Link>
+            <Link href={userEmail ? "/dashboard" : "/login?returnTo=/dashboard"} className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">Track Applications</Link>
             <Link href="/schemes" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">Schemes</Link>
             <Link href="/guide" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">Guide</Link>
           </nav>

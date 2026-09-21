@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Where to send the user after login — defaults to /describe
+  const returnTo = searchParams.get("returnTo") || "/describe";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +26,7 @@ export default function LoginPage() {
       // Demo mode fallback when Supabase is not configured
       setMessage("Demo mode active — signing you in...");
       setTimeout(() => {
-        router.push("/describe");
+        router.push(returnTo);
       }, 700);
       return;
     }
@@ -30,17 +34,16 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback?next=/describe`,
+        emailRedirectTo: `${location.origin}/auth/callback?next=${returnTo}`,
       },
     });
 
     if (error) {
       setMessage("Error: " + error.message);
     } else {
-      // For demo, immediately push them to describe
       setMessage("Check your email for the login link! Redirecting...");
       setTimeout(() => {
-         router.push("/describe");
+         router.push(returnTo);
       }, 1500);
     }
     setLoading(false);
@@ -114,7 +117,7 @@ export default function LoginPage() {
                 await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=/describe`
+                    redirectTo: `${window.location.origin}/auth/callback?next=${returnTo}`
                   }
                 });
               }
@@ -134,7 +137,7 @@ export default function LoginPage() {
         <CardFooter className="flex flex-col gap-2.5 justify-center pb-8 pt-0 px-8">
           <button 
             type="button"
-            onClick={() => router.push("/describe")}
+            onClick={() => router.push(returnTo)}
             className="text-[13.5px] font-semibold text-sarathi-blue hover:underline cursor-pointer"
           >
             Skip for demo (continue as guest) &rarr;
