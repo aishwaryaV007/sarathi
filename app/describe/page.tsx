@@ -285,7 +285,22 @@ export default function DescribePage() {
                   </button>
                   <button 
                     onClick={() => {
-                      // Navigate to checklist
+                      // Save profile to sessionStorage so checklist page can read it
+                      const profile = {
+                        description,
+                        businessType: "", // resolved server-side by /api/understand
+                        state: stateName || "telangana",
+                        city: city || "",
+                        investmentLakh: Number(investment) || 0,
+                        workers: Number(workers) || 0,
+                        usesPower: power === "yes",
+                        handlesFood: food === "yes",
+                        premises: premises || "rented",
+                        usesGroundwater: groundwater === "yes",
+                        entityType: "notyet" as const,
+                        isStartup: false,
+                      };
+                      sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
                       router.push("/checklist");
                     }}
                     className="inline-flex items-center justify-center bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-6 rounded-[8px] transition-colors"

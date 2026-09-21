@@ -4,19 +4,15 @@
 // This is the endpoint the Checklist page calls to replace its hardcoded data.
 
 import { NextResponse } from "next/server";
-import { generateChecklist, resolveBusinessType } from "@/lib/rules-engine";
+import { generateChecklist } from "@/lib/rules-engine";
 import type { BusinessProfile } from "@/lib/types";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const profile = body.profile as BusinessProfile;
-    if (!profile) {
+    if (!profile || !profile.businessType) {
       return NextResponse.json({ error: "profile is required" }, { status: 400 });
-    }
-    // If businessType wasn't resolved yet, resolve from description
-    if (!profile.businessType) {
-      profile.businessType = resolveBusinessType(profile.description || "");
     }
     // Sensible defaults so a partial profile never crashes the engine.
     const safe: BusinessProfile = {

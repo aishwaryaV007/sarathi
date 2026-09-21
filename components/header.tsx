@@ -7,7 +7,7 @@ export function Header() {
       <div className="bg-sarathi-blue-700 text-[#cfe0f2] text-[12.5px]">
         <div className="max-w-[1120px] mx-auto px-6 flex justify-between items-center h-[34px]">
           <span>
-            Government of India · Ease of Doing Business initiative <span className="opacity-60">(prototype)</span>
+            Government of India · Ease of Doing Business initiative
           </span>
           <div className="flex gap-[18px] items-center">
             <Link href="#" className="text-[#dbe9f7] hover:text-white transition-colors">Screen Reader</Link>
@@ -44,7 +44,6 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-[10px]">
-            <span className="text-[11px] font-bold text-sarathi-amber bg-sarathi-amber-050 border border-[#f0dcb8] px-[9px] py-[3px] rounded-full tracking-[0.03em]">SIH 2026 · Prototype</span>
             <Link href="/login" className="hidden sm:inline-flex items-center justify-center border-[1.5px] border-sarathi-line-strong text-sarathi-blue font-semibold px-[18px] py-[10px] rounded-[8px] hover:border-sarathi-blue hover:bg-sarathi-blue-050 transition-colors">
               Login
             </Link>

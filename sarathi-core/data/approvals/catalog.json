@@ -1,0 +1,205 @@
+{
+  "_comment": "Sarathi approval catalog. CONTENT only (names, departments, statutes, documents). The conditional logic that decides WHICH of these apply lives in lib/rules-engine.ts. To add a new approval: add an entry here, then reference its id from a trigger in the engine or from a business type in business-types.json. Timelines and statutes are indicative and sourced from public government material; verify before production.",
+
+  "udyam": {
+    "id": "udyam",
+    "name": "Udyam (MSME) Registration",
+    "department": "Ministry of MSME, Government of India",
+    "statute": "MSMED Act, 2006 — classification per Notification S.O. 1364(E), 2025",
+    "timeline": "Instant (self-declaration)",
+    "documents": ["PAN", "Aadhaar", "Bank account"],
+    "icon": "badge",
+    "portalUrl": "https://udyamregistration.gov.in"
+  },
+  "gst": {
+    "id": "gst",
+    "name": "GST Registration",
+    "department": "Central Board of Indirect Taxes & Customs (CBIC)",
+    "statute": "CGST Act, 2017 — Section 22",
+    "timeline": "3–7 working days",
+    "documents": ["PAN", "Aadhaar", "Premises proof", "Bank account", "Passport photo"],
+    "icon": "rupee",
+    "portalUrl": "https://www.gst.gov.in"
+  },
+  "trade_licence": {
+    "id": "trade_licence",
+    "name": "Trade / Establishment Licence",
+    "department": "Local Municipal Body / Gram Panchayat",
+    "statute": "State Municipalities Act",
+    "timeline": "7–15 working days",
+    "documents": ["Premises proof", "Property tax receipt", "ID proof"],
+    "icon": "building",
+    "portalUrl": ""
+  },
+  "shops": {
+    "id": "shops",
+    "name": "Shops & Establishment Registration",
+    "department": "State Labour Department",
+    "statute": "State Shops & Establishments Act",
+    "timeline": "3–7 working days",
+    "documents": ["Premises proof", "ID proof", "Employee details"],
+    "icon": "store",
+    "portalUrl": ""
+  },
+  "epf": {
+    "id": "epf",
+    "name": "EPF Registration",
+    "department": "EPFO (via Shram Suvidha)",
+    "statute": "Employees' Provident Funds Act, 1952",
+    "timeline": "Online, same day",
+    "documents": ["PAN", "Employee details", "Bank account"],
+    "icon": "users",
+    "portalUrl": "https://www.shramsuvidha.gov.in"
+  },
+  "esi": {
+    "id": "esi",
+    "name": "ESI Registration",
+    "department": "ESIC (via Shram Suvidha)",
+    "statute": "Employees' State Insurance Act, 1948",
+    "timeline": "Online, same day",
+    "documents": ["PAN", "Employee details"],
+    "icon": "users",
+    "portalUrl": "https://www.shramsuvidha.gov.in"
+  },
+  "power_connection": {
+    "id": "power_connection",
+    "name": "Industrial / Commercial Power Connection",
+    "department": "State DISCOM",
+    "statute": "Electricity Act, 2003",
+    "timeline": "12–30 working days",
+    "documents": ["Premises proof", "Load requirement", "Wiring certificate", "ID proof"],
+    "icon": "bolt",
+    "portalUrl": ""
+  },
+  "cte": {
+    "id": "cte",
+    "name": "Consent to Establish (CTE)",
+    "department": "State Pollution Control Board",
+    "statute": "Water Act, 1974 (Sec 25) & Air Act, 1981 (Sec 21)",
+    "timeline": "14–21 working days",
+    "documents": ["Project report", "Site plan", "Land document"],
+    "icon": "leaf",
+    "portalUrl": ""
+  },
+  "cto": {
+    "id": "cto",
+    "name": "Consent to Operate (CTO)",
+    "department": "State Pollution Control Board",
+    "statute": "Water Act, 1974 & Air Act, 1981",
+    "timeline": "Before starting operations",
+    "documents": ["CTE approval", "Pollution control setup proof"],
+    "icon": "leaf",
+    "portalUrl": ""
+  },
+  "factory_licence": {
+    "id": "factory_licence",
+    "name": "Factory Plan Approval & Licence",
+    "department": "State Directorate of Factories / DISH",
+    "statute": "Factories Act, 1948 — Sec 6 & Sec 12",
+    "timeline": "15–30 working days",
+    "documents": ["Building plan", "Machinery layout", "Land document"],
+    "icon": "factory",
+    "portalUrl": ""
+  },
+  "fire_noc": {
+    "id": "fire_noc",
+    "name": "Fire Safety NOC",
+    "department": "State Fire Services",
+    "statute": "State Fire Service Act",
+    "timeline": "7–15 working days",
+    "documents": ["Building plan", "Fire safety layout"],
+    "icon": "flame",
+    "portalUrl": ""
+  },
+  "groundwater_noc": {
+    "id": "groundwater_noc",
+    "name": "Ground Water Extraction NOC",
+    "department": "CGWA / State Ground Water Department",
+    "statute": "Environment (Protection) Act, 1986 — CGWA guidelines",
+    "timeline": "30 working days",
+    "documents": ["Borewell details", "Land document", "Water use plan"],
+    "icon": "droplet",
+    "portalUrl": "https://cgwa-noc.gov.in"
+  },
+
+  "fssai": {
+    "id": "fssai",
+    "name": "FSSAI Food Licence",
+    "department": "Food Safety & Standards Authority of India",
+    "statute": "Food Safety & Standards Act, 2006",
+    "timeline": "7–30 working days",
+    "documents": ["ID proof", "Premises proof", "Water analysis report", "Food safety plan"],
+    "icon": "utensils",
+    "portalUrl": "https://foscos.fssai.gov.in"
+  },
+  "bis_isi": {
+    "id": "bis_isi",
+    "name": "BIS Certification (ISI Mark)",
+    "department": "Bureau of Indian Standards",
+    "statute": "BIS Act, 2016 — IS 14543 (packaged drinking water)",
+    "timeline": "30–60 working days",
+    "documents": ["Water test report", "Layout plan", "Machinery list", "Lab details"],
+    "icon": "certificate",
+    "portalUrl": "https://www.manakonline.in"
+  },
+  "drug_licence": {
+    "id": "drug_licence",
+    "name": "Drug Licence (Retail / Wholesale)",
+    "department": "State Drugs Control Administration",
+    "statute": "Drugs & Cosmetics Act, 1940",
+    "timeline": "30–45 working days",
+    "documents": ["Pharmacist registration", "Premises proof", "Refrigerator proof", "Layout plan"],
+    "icon": "pill",
+    "portalUrl": ""
+  },
+  "legal_metrology": {
+    "id": "legal_metrology",
+    "name": "Legal Metrology Registration",
+    "department": "State Legal Metrology Department",
+    "statute": "Legal Metrology Act, 2009",
+    "timeline": "7–15 working days",
+    "documents": ["Weighing instrument details", "Premises proof"],
+    "icon": "scale",
+    "portalUrl": ""
+  },
+  "excise_licence": {
+    "id": "excise_licence",
+    "name": "Excise Licence (Liquor)",
+    "department": "State Prohibition & Excise Department",
+    "statute": "State Excise Act",
+    "timeline": "30–60 working days",
+    "documents": ["Premises proof", "ID proof", "NOC from local body"],
+    "icon": "wine",
+    "portalUrl": ""
+  },
+  "eating_house": {
+    "id": "eating_house",
+    "name": "Eating House Licence",
+    "department": "Local Police / Municipal Body",
+    "statute": "State Police Act / Municipal bye-laws",
+    "timeline": "15–30 working days",
+    "documents": ["Premises proof", "Fire NOC", "FSSAI licence"],
+    "icon": "utensils",
+    "portalUrl": ""
+  },
+  "company_incorporation": {
+    "id": "company_incorporation",
+    "name": "Company Incorporation (SPICe+)",
+    "department": "Ministry of Corporate Affairs (MCA)",
+    "statute": "Companies Act, 2013",
+    "timeline": "7–15 working days",
+    "documents": ["DIN", "DSC", "MOA & AOA", "Registered office proof", "PAN"],
+    "icon": "landmark",
+    "portalUrl": "https://www.mca.gov.in"
+  },
+  "startup_dpiit": {
+    "id": "startup_dpiit",
+    "name": "Startup India (DPIIT) Recognition",
+    "department": "DPIIT, Ministry of Commerce & Industry",
+    "statute": "Startup India scheme",
+    "timeline": "3–5 working days",
+    "documents": ["Incorporation certificate", "PAN", "Brief write-up"],
+    "icon": "rocket",
+    "portalUrl": "https://www.startupindia.gov.in"
+  }
+}
