@@ -10,8 +10,8 @@ import { LanguageProvider } from "@/lib/i18n/context";
 const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sans" });
 const sourceSerif4 = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif-4" });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
   const savedLocale = cookieStore.get("sarathi_locale")?.value as Locale | undefined;
   const initialLocale = savedLocale && LOCALE_LABELS[savedLocale] ? savedLocale : "en";
 
