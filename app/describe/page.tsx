@@ -288,7 +288,10 @@ export default function DescribePage() {
                       // Save profile to sessionStorage so checklist page can read it
                       const profile = {
                         description,
-                        businessType: "", // resolved server-side by /api/understand
+                        businessLabel: "", // resolved server-side by /api/understand
+                        pollutionCategory: "white", // resolved server-side
+                        isManufacturing: false, // resolved server-side
+                        sectorApprovals: [], // resolved server-side
                         state: stateName || "telangana",
                         city: city || "",
                         investmentLakh: Number(investment) || 0,

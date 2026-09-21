@@ -4,8 +4,14 @@
 export interface BusinessProfile {
   /** Free-text description the user typed. */
   description: string;
-  /** Resolved business type key (from business-types.json), e.g. "water_plant". */
-  businessType: string;
+  /** The human-readable label of the business type the AI inferred. */
+  businessLabel: string;
+  /** Pollution category assigned by the AI. */
+  pollutionCategory: "white" | "green" | "orange" | "red";
+  /** Is this a manufacturing business? */
+  isManufacturing: boolean;
+  /** Array of specific sector approval IDs the AI determined apply. */
+  sectorApprovals: string[];
   state: "telangana" | "maharashtra" | "other";
   city: string;
   /** Investment in plant, machinery & equipment, in LAKH rupees. 40 = ₹40 lakh. */

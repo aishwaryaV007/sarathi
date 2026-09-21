@@ -33,6 +33,26 @@ export default function SchemesPage() {
       maxAmount: "₹10 Lakhs - ₹1 Crore",
       icon: <BadgeIndianRupee className="w-5 h-5 text-sarathi-blue" />,
       tags: ["Women", "SC/ST", "Greenfield"]
+    },
+    {
+      id: "tidea",
+      name: "T-IDEA (Telangana Industrial Development & Entrepreneur Advancement)",
+      department: "Industries & Commerce, Telangana",
+      description: "State-level incentives including stamp duty reimbursement, power cost reimbursement, and investment subsidies for new manufacturing units.",
+      subsidy: "15% - 25% Subsidy",
+      maxAmount: "₹20 Lakhs",
+      icon: <Landmark className="w-5 h-5 text-sarathi-blue" />,
+      tags: ["Manufacturing", "State Specific"]
+    },
+    {
+      id: "mudra",
+      name: "Pradhan Mantri MUDRA Yojana (PMMY)",
+      department: "Micro Units Development and Refinance Agency",
+      description: "Loans up to ₹10 Lakhs provided to non-corporate, non-farm small/micro enterprises for income-generating activities.",
+      subsidy: "Concessional Loan",
+      maxAmount: "₹10 Lakhs",
+      icon: <Briefcase className="w-5 h-5 text-sarathi-blue" />,
+      tags: ["Micro Business", "Trading", "Services"]
     }
   ];
 

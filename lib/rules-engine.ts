@@ -5,14 +5,12 @@
 // statute-cited, location-resolved checklist ordered by dependency sequence.
 //
 // Architectural separation:
-//   1. data/approvals/business-types.json: Triggers & base approvals per sector
-//   2. data/approvals/catalog.json: Content, portal URLs, documents, stages
-//   3. lib/rules-engine.ts: Conditional logic, location authority resolution,
-//      and dependency staging.
+//   1. data/approvals/catalog.json: Content, portal URLs, documents, stages
+//   2. lib/rules-engine.ts: Conditional logic, location authority resolution,
+//      and dependency staging. (Now powered by dynamic LLM AI inference instead of static JSON)
 // ============================================================================
 
 import catalog from "../data/approvals/catalog.json";
-import businessTypes from "../data/approvals/business-types.json";
 import type {
   BusinessProfile,
   Approval,
@@ -36,17 +34,7 @@ interface CatalogEntry {
   locationDependent?: boolean;
 }
 
-interface BusinessTypeEntry {
-  label: string;
-  pollution: PollutionCategory;
-  baseApprovals?: string[];
-  sectorApprovals?: string[];
-  defaults: Partial<Record<string, boolean>>;
-  aliases: string[];
-}
-
 const CATALOG = catalog as unknown as Record<string, CatalogEntry>;
-const BTYPES = businessTypes as unknown as Record<string, BusinessTypeEntry>;
 
 // ---------------------------------------------------------------------------
 // Pure classifiers
@@ -63,19 +51,6 @@ export function classifyMsme(investmentLakh: number): MsmeCategory {
 /** Factories Act applicability: 10+ workers with power, 20+ without power. */
 export function factoryApplies(workers: number, usesPower: boolean): boolean {
   return usesPower ? workers >= 10 : workers >= 20;
-}
-
-/** Resolve a free-text description OR an explicit key to a business-type key. */
-export function resolveBusinessType(input: string): string {
-  const key = input.trim().toLowerCase();
-  if (BTYPES[key]) return key; // already a valid key
-
-  for (const [typeKey, def] of Object.entries(BTYPES)) {
-    if (typeKey === "generic" || typeKey.startsWith("_")) continue;
-    if (!def || !Array.isArray(def.aliases)) continue;
-    if (def.aliases.some((a) => key.includes(a.toLowerCase()))) return typeKey;
-  }
-  return "generic";
 }
 
 // ---------------------------------------------------------------------------
@@ -418,18 +393,16 @@ function hydrateApproval(
 // ---------------------------------------------------------------------------
 
 export function generateChecklist(profile: BusinessProfile): ChecklistResult {
-  const bt = BTYPES[profile.businessType] ?? BTYPES["generic"];
   const msme = classifyMsme(profile.investmentLakh);
-  const pollution = bt.pollution;
-  const isManufacturing = !!bt.defaults?.manufacturing;
+  const pollution = profile.pollutionCategory;
+  const isManufacturing = profile.isManufacturing;
   const factory = isManufacturing && factoryApplies(profile.workers, profile.usesPower);
   const needsPollutionConsent = pollution !== "white";
 
-  // Check for alcohol/liquor intent (flag, defaults, or text description)
+  // Check for alcohol/liquor intent (flag or text description)
   const servesAlcohol =
     !!profile.servesAlcohol ||
     !!profile.alcohol ||
-    !!bt.defaults?.servesAlcohol ||
     /\b(alcohol|liquor|wine|beer|bar|pub)\b/i.test(profile.description || "");
 
   // Candidate map for triggered approvals: id -> { reason, category }
@@ -456,11 +429,8 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
     );
   }
 
-  // 2. Base Approvals triggered by Business Type (e.g. restaurant triggers 6 base approvals)
-  const baseList =
-    bt.baseApprovals && bt.baseApprovals.length > 0
-      ? bt.baseApprovals
-      : ["udyam", "gst", "trade_licence", "shops", ...(bt.sectorApprovals || [])];
+  // 2. Base Approvals triggered by Business Type
+  const baseList = ["udyam", "gst", "trade_licence", "shops", ...(profile.sectorApprovals || [])];
 
   const baseReasons: Record<string, string> = {
     udyam: `Every enterprise should register — sets your official MSME status (${msme}).`,
@@ -477,8 +447,8 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
   };
 
   for (const id of baseList) {
-    // If food handling is explicitly denied and not defaulted, skip FSSAI
-    if (id === "fssai" && profile.handlesFood === false && !bt.defaults?.handlesFood) {
+    // If food handling is explicitly denied, skip FSSAI even if AI hallucinates it
+    if (id === "fssai" && profile.handlesFood === false) {
       continue;
     }
     trigger(id, baseReasons[id] ?? "Base statutory approval required for this business sector.");
@@ -494,7 +464,7 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
     );
   }
 
-  // B. Food handling rule (if user handles food in a non-food business)
+  // B. Food handling rule (if user handles food)
   if (profile.handlesFood && !triggered.has("fssai")) {
     trigger(
       "fssai",
@@ -517,7 +487,7 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
   }
 
   // D. Groundwater extraction rule
-  if ((profile.usesGroundwater || bt.defaults?.usesGroundwater) && !triggered.has("groundwater_noc")) {
+  if (profile.usesGroundwater && !triggered.has("groundwater_noc")) {
     trigger(
       "groundwater_noc",
       "You indicated borewell or groundwater extraction for operations — CGWA / State Ground Water NOC is mandatory."
@@ -566,11 +536,6 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
   }
 
   // 5. Dependency Sequencing: Order approvals in logical operational lifecycle
-  // Lifecycle Stage 1: Entity & Registration (Company, DPIIT, Udyam, GST)
-  // Lifecycle Stage 2: Premises & Infrastructure (Groundwater, CTE, Factory Plan, Fire NOC, Power, Trade Licence)
-  // Lifecycle Stage 3: Operational Licences (CTO, FSSAI, BIS, Drug, Eating House, Excise, Legal Metrology)
-  // Lifecycle Stage 4: Labour & Ongoing Compliance (Shops, ESI, EPF)
-
   const STAGE_ORDER: Record<string, number> = {
     // Stage 1
     company_incorporation: 10,
@@ -659,9 +624,9 @@ export function generateChecklist(profile: BusinessProfile): ChecklistResult {
   }
 
   return {
-    businessLabel: bt.label,
+    businessLabel: profile.businessLabel,
     msme,
-    pollution,
+    pollution: profile.pollutionCategory,
     factoryApplies: factory,
     needsPollutionConsent,
     approvals: hydrated,

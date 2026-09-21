@@ -86,37 +86,39 @@ export default function DashboardPage() {
           {/* Main List */}
           <div className="space-y-4">
             {applications.map((app) => (
-              <Card key={app.id} className="border-sarathi-line shadow-sm rounded-[12px] hover:border-sarathi-line-strong transition-colors">
-                <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-sarathi-page border border-sarathi-line flex items-center justify-center shrink-0">
-                      <app.icon className="w-5 h-5 text-sarathi-blue" />
+              <Link key={app.id} href={`/apply/${app.id}`} className="block">
+                <Card className="border-sarathi-line shadow-sm rounded-[12px] hover:border-sarathi-blue-100 transition-colors cursor-pointer bg-white hover:shadow-md">
+                  <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-full bg-sarathi-page border border-sarathi-line flex items-center justify-center shrink-0">
+                        <app.icon className="w-5 h-5 text-sarathi-blue" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-[16px] text-sarathi-ink group-hover:text-sarathi-blue transition-colors">{app.name}</div>
+                        <div className="text-[13.5px] text-sarathi-muted mt-0.5">{app.dept}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-[16px] text-sarathi-ink">{app.name}</div>
-                      <div className="text-[13.5px] text-sarathi-muted mt-0.5">{app.dept}</div>
+                    
+                    <div className="flex flex-col w-full md:w-[260px] shrink-0">
+                      <div className="flex items-center justify-between w-full mb-2">
+                        <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${getStatusStyles(app.statusType)}`}>
+                          {app.status}
+                        </span>
+                        <span className="text-[13px] font-semibold text-sarathi-muted">
+                          {app.text}
+                        </span>
+                      </div>
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 rounded-full bg-sarathi-page border border-sarathi-line-strong/50 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(app.statusType)}`}
+                          style={{ width: `${app.progress}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex flex-col w-full md:w-[260px] shrink-0">
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <span className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${getStatusStyles(app.statusType)}`}>
-                        {app.status}
-                      </span>
-                      <span className="text-[13px] font-semibold text-sarathi-muted">
-                        {app.text}
-                      </span>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="w-full h-2 rounded-full bg-sarathi-page border border-sarathi-line-strong/50 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(app.statusType)}`}
-                        style={{ width: `${app.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 

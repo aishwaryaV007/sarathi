@@ -1,10 +1,11 @@
 // POST /api/checklist
 // Body:  { profile: BusinessProfile }  (the full Describe-page answers)
 // Returns: { result: ChecklistResult }  — the dynamic, statute-cited checklist.
-// This is the endpoint the Checklist page calls to replace its hardcoded data.
+// This is the endpoint the Checklist page calls to generate data based on the AI profile.
 
 import { NextResponse } from "next/server";
-import { generateChecklist, resolveBusinessType } from "@/lib/rules-engine";
+import { generateChecklist } from "@/lib/rules-engine";
+import { understand } from "@/lib/ai";
 import type { BusinessProfile } from "@/lib/types";
 
 export async function POST(req: Request) {
@@ -14,14 +15,29 @@ export async function POST(req: Request) {
     if (!profile) {
       return NextResponse.json({ error: "profile is required" }, { status: 400 });
     }
-    // If businessType wasn't resolved yet, resolve from description
-    if (!profile.businessType) {
-      profile.businessType = resolveBusinessType(profile.description || "");
+
+    // Call the LLM to extract the dynamic fields if not already present
+    if (!profile.businessLabel || profile.businessLabel === "") {
+      try {
+        const facts = await understand(profile.description || "");
+        profile.businessLabel = facts.businessLabel;
+        profile.pollutionCategory = facts.pollutionCategory;
+        profile.isManufacturing = facts.isManufacturing;
+        profile.sectorApprovals = facts.sectorApprovals;
+        // Optionally override user inputs if the LLM extracted something useful
+        if (facts.state && facts.state !== "other") profile.state = facts.state;
+      } catch (err) {
+        console.error("LLM extraction failed in checklist route:", err);
+      }
     }
+
     // Sensible defaults so a partial profile never crashes the engine.
     const safe: BusinessProfile = {
       description: profile.description ?? "",
-      businessType: profile.businessType,
+      businessLabel: profile.businessLabel || "General Business",
+      pollutionCategory: profile.pollutionCategory || "white",
+      isManufacturing: !!profile.isManufacturing,
+      sectorApprovals: Array.isArray(profile.sectorApprovals) ? profile.sectorApprovals : [],
       state: profile.state ?? "telangana",
       city: profile.city ?? "",
       investmentLakh: Number(profile.investmentLakh) || 0,
