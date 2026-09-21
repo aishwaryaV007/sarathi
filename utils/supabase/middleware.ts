@@ -49,6 +49,7 @@ export async function updateSession(request: NextRequest) {
     ) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
     }
   } catch (err) {
