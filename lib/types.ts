@@ -1,35 +1,92 @@
-// Shared types for the Sarathi rules engine.
+// Shared types for the Sarathi dynamic rules engine.
 
-/** Raw answers collected from the Describe page (Step 1 + Step 2). */
+export type LegalStructure =
+  | "sole_proprietorship"
+  | "partnership"
+  | "llp"
+  | "private_limited"
+  | "public_limited"
+  | "opc"
+  | "cooperative"
+  | "other";
+
+export type BusinessActivity =
+  | "retail"
+  | "wholesale"
+  | "manufacturing"
+  | "services"
+  | "food_service"
+  | "food_processing"
+  | "pharmacy"
+  | "it_services"
+  | "construction"
+  | "logistics"
+  | "healthcare"
+  | "other";
+
+export type Sector =
+  | "food"
+  | "manufacturing"
+  | "it_tech"
+  | "healthcare_pharma"
+  | "retail_trade"
+  | "hospitality"
+  | "services"
+  | "chemicals"
+  | "other";
+
+export type JurisdictionType =
+  | "ghmc"
+  | "municipality"
+  | "panchayat"
+  | "industrial_area";
+
+export type ApplicabilityStatus =
+  | "APPLICABLE"
+  | "POTENTIALLY_APPLICABLE"
+  | "NOT_APPLICABLE";
+
+export type MsmeCategory = "Micro" | "Small" | "Medium" | "Large";
+export type PollutionCategory = "white" | "green" | "orange" | "red";
+
+/** Business Profile evaluated by the rules engine. */
 export interface BusinessProfile {
-  /** Free-text description the user typed. */
-  description: string;
-  /** The human-readable label of the business type the AI inferred. */
-  businessLabel: string;
-  /** Pollution category assigned by the AI. */
-  pollutionCategory: "white" | "green" | "orange" | "red";
-  /** Is this a manufacturing business? */
-  isManufacturing: boolean;
-  /** Array of specific sector approval IDs the AI determined apply. */
-  sectorApprovals: string[];
-  state: "telangana" | "maharashtra" | "other";
+  description?: string;
+  businessLabel?: string;
+  legalStructure: LegalStructure;
+  businessActivity: BusinessActivity;
+  sector: Sector;
+  state: string; // e.g. "telangana", "maharashtra", "other"
   city: string;
-  /** Investment in plant, machinery & equipment, in LAKH rupees. 40 = ₹40 lakh. */
-  investmentLakh: number;
-  workers: number;
-  usesPower: boolean;
+  district?: string;
+  jurisdictionType?: JurisdictionType;
+  businessStage?: "new" | "expansion" | "existing";
+  investmentLakh: number; // In Lakh rupees
+  annualTurnoverLakh?: number; // In Lakh rupees
+  workers: number; // Employee/worker count
+  hasPhysicalPremises: boolean;
+  premises: "owned" | "rented" | "leased";
+  premisesType?: "commercial" | "industrial" | "home_office" | "warehouse";
+  usesPower: boolean; // Uses industrial / 3-phase electric power for production
+  usesMachinery?: boolean;
   handlesFood: boolean;
-  premises: "owned" | "rented";
-  usesGroundwater: boolean;
-  entityType: "proprietor" | "partnership" | "company" | "notyet";
-  /** true if the user marked this as a startup seeking DPIIT recognition. */
-  isStartup?: boolean;
-  /** true if business plans to serve/sell liquor or alcohol. */
   servesAlcohol?: boolean;
+  handlesDrugs?: boolean;
+  usesWeighingInstruments?: boolean;
+  usesGroundwater: boolean;
+  pollutionCategory?: PollutionCategory;
+  generatesHazardousWaste?: boolean;
+  waterEffluentDischarge?: boolean;
+  isStartup?: boolean;
+
+  // Backward-compatibility fields
+  entityType?: "proprietor" | "partnership" | "company" | "notyet" | string;
+  isManufacturing?: boolean;
+  sectorApprovals?: string[];
   alcohol?: boolean;
 }
 
-/** A single approval, hydrated from catalog.json with runtime context filled in. */
+/** A single approval, hydrated from catalog.json with runtime rules evaluation and location context. */
 export interface Approval {
   id: string;
   name: string;
@@ -39,11 +96,21 @@ export interface Approval {
   documents: string[];
   icon: string;
   portalUrl: string;
-  /** Why the engine included this approval — shown as a tooltip / explanation. */
+
+  /** Multi-tier applicability determination. */
+  applicability: ApplicabilityStatus;
+  /** Clear statutory explanation of why this determination was made. */
   reason: string;
-  /** Pollution category tag, only set on pollution consents. */
-  category?: "white" | "green" | "orange" | "red";
-  /** Stage sequence (1: Entity & Registration, 2: Premises & Infrastructure, 3: Operational Licences, 4: Labour & Compliance) */
+  /** Factors from the profile that triggered or contributed to this rule. */
+  triggeredBy: string[];
+  /** Conditions or inspections required to confirm applicability if POTENTIALLY_APPLICABLE. */
+  verificationConditions?: string[];
+  /** Specific items or details the user still needs to provide. */
+  missingInfo?: string[];
+
+  /** CPCB Pollution category tag, set on pollution consents. */
+  category?: PollutionCategory;
+  /** Lifecycle stage sequence: 1: Entity, 2: Infrastructure/Premises, 3: Operational, 4: Labour */
   stage?: number;
   stageName?: string;
   dependsOn?: string[];
@@ -51,8 +118,19 @@ export interface Approval {
   authorityType?: "GHMC" | "CDMA" | "Panchayat" | "State" | "Central";
 }
 
-export type MsmeCategory = "Micro" | "Small" | "Medium" | "Large";
-export type PollutionCategory = "white" | "green" | "orange" | "red";
+/** Matched Government Scheme or Subsidy. */
+export interface SchemeMatch {
+  id: string;
+  name: string;
+  department: string;
+  description: string;
+  subsidy: string;
+  maxAmount: string;
+  tags: string[];
+  confidence: "high" | "moderate";
+  eligibilityReason: string;
+  portalUrl?: string;
+}
 
 /** The full result the engine returns for a profile. */
 export interface ChecklistResult {
@@ -61,7 +139,21 @@ export interface ChecklistResult {
   pollution: PollutionCategory;
   factoryApplies: boolean;
   needsPollutionConsent: boolean;
+
+  /** Legacy / Flat list of actionable approvals (Applicable + Potentially Applicable) */
   approvals: Approval[];
-  /** Government incentive schemes the profile likely qualifies for. */
+
+  /** Strictly Applicable (Mandatory) approvals */
+  applicableApprovals: Approval[];
+  /** Approvals needing specific verification or local threshold review */
+  potentiallyApplicableApprovals: Approval[];
+  /** Approvals explicitly evaluated as not required for this profile, with reasons */
+  notApplicableApprovals: Approval[];
+
+  /** Legacy incentive notes */
   incentives: { name: string; note: string }[];
+  /** Dynamically matched government schemes and subsidies */
+  matchedSchemes: SchemeMatch[];
+  /** Echo of the evaluated business profile */
+  profileSummary: BusinessProfile;
 }

@@ -1,0 +1,270 @@
+{
+  "_comment": "Declarative rules catalog for SARATHI. Decouples applicability conditions, statutory triggers, verification checks, and explanations from catalog metadata.",
+  "rules": {
+    "company_incorporation": {
+      "approvalId": "company_incorporation",
+      "applicableIf": {
+        "legalStructure": ["private_limited", "public_limited", "opc"]
+      },
+      "applicableReason": "SPICe+ incorporation via the Ministry of Corporate Affairs (MCA) is mandatory for corporate entities (Private Limited, Public Limited, or OPC).",
+      "notApplicableReason": "Your legal structure does not require MCA corporate incorporation (proprietorships, general partnerships, and cooperatives operate under separate non-corporate statutes).",
+      "triggeredBy": ["Legal structure is Private Limited, Public Limited, or One Person Company"],
+      "missingInfo": ["Director Identification Number (DIN)", "Digital Signature Certificate (DSC)", "Proposed company name", "Registered office address proof"]
+    },
+    "startup_dpiit": {
+      "approvalId": "startup_dpiit",
+      "applicableIf": {
+        "isStartup": true,
+        "legalStructure": ["private_limited", "llp", "partnership"]
+      },
+      "potentiallyApplicableIf": {
+        "isStartup": true
+      },
+      "applicableReason": "You indicated startup status with an eligible entity structure — DPIIT recognition unlocks Section 80-IAC tax exemptions, fast-tracked patent filings, and seed funding access.",
+      "potentiallyApplicableReason": "You indicated startup intent, but DPIIT recognition strictly requires a registered Private Limited Company, LLP, or registered Partnership (Sole Proprietorships are not eligible under Startup India rules).",
+      "notApplicableReason": "Not indicated as you did not register this venture as an innovative startup under DPIIT criteria.",
+      "triggeredBy": ["Startup recognition intent", "Eligible constitution structure"],
+      "verificationConditions": ["Verification of entity incorporation date (< 10 years)", "Proof of innovation or scalable business model"]
+    },
+    "udyam": {
+      "approvalId": "udyam",
+      "applicableIf": {
+        "msmeEligible": true
+      },
+      "applicableReason": "Mandatory national MSME registration under MSMED Act, 2006. Classifies your enterprise and unlocks priority lending, collateral-free loans, and delayed payment protections.",
+      "notApplicableReason": "Investment and turnover exceed the statutory MSME ceiling (Large enterprise).",
+      "triggeredBy": ["Investment and turnover fall within Micro, Small, or Medium enterprise thresholds"],
+      "missingInfo": ["Entrepreneur Aadhaar number", "Enterprise PAN", "Bank account details"]
+    },
+    "gst": {
+      "approvalId": "gst",
+      "applicableIf": {
+        "turnoverExceeds": true,
+        "interstateOrEcommerce": true
+      },
+      "potentiallyApplicableIf": {
+        "turnoverBelowThreshold": true
+      },
+      "applicableReason": "GST registration is mandatory under CGST Act, 2017 Section 22/24 due to turnover thresholds, interstate sales, or corporate B2B trading requirement.",
+      "potentiallyApplicableReason": "Turnover may be below the mandatory threshold (₹40L for goods, ₹20L for services), but voluntary GST registration is strongly advised to claim Input Tax Credit (ITC) and open commercial current accounts.",
+      "notApplicableReason": "Exclusively engaged in non-taxable agricultural produce with no commercial or interstate turnover.",
+      "triggeredBy": ["Turnover criteria or B2B/interstate operations"],
+      "verificationConditions": ["Verify whether first-year turnover will exceed statutory threshold", "Check if selling goods interstate or via e-commerce"]
+    },
+    "trade_licence": {
+      "approvalId": "trade_licence",
+      "applicableIf": {
+        "hasPhysicalPremises": true,
+        "jurisdictionType": ["ghmc", "municipality"]
+      },
+      "potentiallyApplicableIf": {
+        "hasPhysicalPremises": true,
+        "jurisdictionType": ["panchayat", "industrial_area"]
+      },
+      "applicableReason": "Mandatory trade licence required under State Municipalities Act / Municipal Corporation Act to operate a commercial establishment within urban municipal jurisdiction.",
+      "potentiallyApplicableReason": "Premises is located in a Gram Panchayat or Industrial Area where Gram Panchayat D&O licence or Industrial Area Local Authority (IALA) clearance applies.",
+      "notApplicableReason": "No physical commercial premises detected (e.g. 100% remote digital service with no commercial walk-in or premises footprint).",
+      "triggeredBy": ["Physical commercial premises located in urban municipal boundary"],
+      "verificationConditions": ["Verify local municipal ward and property tax assessment number of the premises"]
+    },
+    "shops": {
+      "approvalId": "shops",
+      "applicableIf": {
+        "hasPhysicalPremises": true,
+        "isFactory": false
+      },
+      "potentiallyApplicableIf": {
+        "hasPhysicalPremises": false,
+        "workers": 1
+      },
+      "applicableReason": "Mandatory registration under State Shops & Establishments Act governing operating hours, employee welfare, statutory leave, and working conditions.",
+      "potentiallyApplicableReason": "Operating with employees; check if local labour inspector requires registration for virtual or co-working addresses.",
+      "notApplicableReason": "Your unit is registered as a manufacturing factory under the Factories Act, 1948, which explicitly exempts premises from the Shops & Establishments Act.",
+      "triggeredBy": ["Commercial establishment with physical premises not covered under Factories Act"],
+      "verificationConditions": ["Check state-specific threshold on minimum employee count for mandatory registration"]
+    },
+    "cte": {
+      "approvalId": "cte",
+      "applicableIf": {
+        "pollutionCategory": ["orange", "red"]
+      },
+      "potentiallyApplicableIf": {
+        "pollutionCategory": ["green"]
+      },
+      "applicableReason": "Consent to Establish (CTE) is mandatory under Water Act, 1974 (Sec 25) & Air Act, 1981 (Sec 21) from State Pollution Control Board before starting civil construction or machinery installation.",
+      "potentiallyApplicableReason": "Green category pollution activity — eligible for simplified online consent or white-category self-declaration depending on local SPCB industrial zone norms.",
+      "notApplicableReason": "Classified as WHITE category by the Central Pollution Control Board (CPCB) — non-polluting activities are completely exempted from environmental consents.",
+      "triggeredBy": ["Industrial activity with environmental emissions / effluents (Orange or Red category)"],
+      "verificationConditions": ["Detailed Project Report (DPR)", "Site layout plan and effluent treatment scheme"]
+    },
+    "cto": {
+      "approvalId": "cto",
+      "applicableIf": {
+        "pollutionCategory": ["orange", "red"]
+      },
+      "potentiallyApplicableIf": {
+        "pollutionCategory": ["green"]
+      },
+      "applicableReason": "Consent to Operate (CTO) is mandatory under Water Act & Air Act before commencing trial production or commercial operations.",
+      "potentiallyApplicableReason": "Green category — requires operational intimation or simplified CTO depending on state PCB norms.",
+      "notApplicableReason": "Non-polluting white category business — exempted from pollution control operations consent.",
+      "triggeredBy": ["Post-installation operational clearance required for polluting manufacturing processes"],
+      "verificationConditions": ["Compliance report of CTE conditions", "Adequacy of pollution control equipment installed"]
+    },
+    "factory_licence": {
+      "approvalId": "factory_licence",
+      "applicableIf": {
+        "isManufacturing": true,
+        "factoryWorkerThreshold": true
+      },
+      "potentiallyApplicableIf": {
+        "isManufacturing": true,
+        "factoryWorkerThreshold": false
+      },
+      "applicableReason": "Factory Plan Approval & Licence is mandatory under Factories Act, 1948 (Sec 6 & 12) for manufacturing units employing 10+ workers with power or 20+ workers without power.",
+      "potentiallyApplicableReason": "Manufacturing activity with machinery detected, but current workforce is below the statutory threshold (10 with power / 20 without). Final applicability depends on seasonal workforce expansions or local factory inspectorate verification.",
+      "notApplicableReason": "Business does not conduct a manufacturing process (retail, IT, hospitality, consulting, or services are governed by Shops & Establishments instead).",
+      "triggeredBy": ["Manufacturing activity with machinery and workforce meeting statutory thresholds"],
+      "verificationConditions": ["Verify exact number of workers on the manufacturing floor", "Connected electrical power load in HP/kW"]
+    },
+    "fire_noc": {
+      "approvalId": "fire_noc",
+      "applicableIf": {
+        "highFireRisk": true
+      },
+      "potentiallyApplicableIf": {
+        "moderateFireRisk": true
+      },
+      "applicableReason": "Fire Safety NOC from State Disaster Response & Fire Services is mandatory for manufacturing factories, hazardous chemical units, and commercial premises with high fire risk.",
+      "potentiallyApplicableReason": "Fire NOC applicability depends on physical building parameters (height > 15 metres, built-up area > 500 sq. metres, or restaurant seating > 50 covers) subject to local fire authority review.",
+      "notApplicableReason": "Low-risk, ground-floor commercial premises or home office with built-up area below statutory fire department inspection thresholds.",
+      "triggeredBy": ["Industrial manufacturing, hazardous storage, or commercial building occupancy"],
+      "verificationConditions": ["Building height and total built-up area in square metres", "Sanctioned architectural building plan showing fire egress routes"]
+    },
+    "power_connection": {
+      "approvalId": "power_connection",
+      "applicableIf": {
+        "usesPower": true,
+        "hasPhysicalPremises": true
+      },
+      "potentiallyApplicableIf": {
+        "hasPhysicalPremises": true
+      },
+      "applicableReason": "Commercial / Industrial power connection and load sanction required from the electricity distribution company (DISCOM) for production and commercial machinery.",
+      "potentiallyApplicableReason": "Standard commercial premises — check if existing landlord meter load is adequate or commercial category conversion is required.",
+      "notApplicableReason": "No commercial or industrial electric power load needed (e.g. home office or non-powered manual unit).",
+      "triggeredBy": ["High-load electricity usage or industrial machinery on premises"],
+      "missingInfo": ["Connected load requirement in kVA/kW", "Electrical contractor wiring completion certificate"]
+    },
+    "fssai": {
+      "approvalId": "fssai",
+      "applicableIf": {
+        "handlesFood": true
+      },
+      "applicableReason": "Mandatory Food Safety Licence / Registration under Food Safety & Standards Act, 2006 for handling, preparing, processing, packaging, distributing, or selling food items.",
+      "notApplicableReason": "Your business does not involve food, edible products, or beverage handling.",
+      "triggeredBy": ["Food handling, processing, preparation, or distribution activity"],
+      "missingInfo": ["Food safety management plan", "Water testing analysis report (from NABL accredited lab)", "List of food categories"]
+    },
+    "bis_isi": {
+      "approvalId": "bis_isi",
+      "applicableIf": {
+        "mandatoryBisProduct": true
+      },
+      "potentiallyApplicableIf": {
+        "isManufacturing": true
+      },
+      "applicableReason": "Mandatory BIS ISI Mark Certification under BIS Act, 2016 (e.g. IS 14543 for Packaged Drinking Water, IS 13428 for Mineral Water) before commercial packaging and sale.",
+      "potentiallyApplicableReason": "Check if your manufactured products are covered under the Central Government's expanding mandatory Quality Control Orders (QCO).",
+      "notApplicableReason": "Product is not subject to mandatory Bureau of Indian Standards (BIS) certification.",
+      "triggeredBy": ["Manufacture or packaging of products under mandatory BIS Quality Control Orders"],
+      "verificationConditions": ["In-house laboratory test facilities", "Calibration certificates for testing equipment"]
+    },
+    "drug_licence": {
+      "approvalId": "drug_licence",
+      "applicableIf": {
+        "handlesDrugs": true
+      },
+      "applicableReason": "Mandatory Drug Licence (Form 20/21) under Drugs & Cosmetics Act, 1940 from State Drugs Control Administration for stocking, selling, or distributing medicines.",
+      "notApplicableReason": "Business does not stock, dispense, manufacture, or distribute pharmaceutical drugs or medical formulations.",
+      "triggeredBy": ["Pharmaceutical, medical store, or drug distribution activity"],
+      "missingInfo": ["Registered Pharmacist certificate & state pharmacy council registration", "Refrigerator purchase invoice (for cold-chain drugs)", "Premises minimum carpet area proof (10 sq.m / 15 sq.m)"]
+    },
+    "eating_house": {
+      "approvalId": "eating_house",
+      "applicableIf": {
+        "isDineInRestaurant": true
+      },
+      "potentiallyApplicableIf": {
+        "businessActivity": ["food_service"]
+      },
+      "applicableReason": "Mandatory Eating House Licence from the City Police Commissionerate / District Magistrate to operate a public dining or refreshment establishment.",
+      "potentiallyApplicableReason": "Cloud kitchen / takeaway food business — police eating house rules vary by city when customers do not enter the premises.",
+      "notApplicableReason": "Business is not an eating house, restaurant, or public dining establishment.",
+      "triggeredBy": ["Public food service establishment with customer dining"],
+      "verificationConditions": ["NOC from local police station", "Fire safety clearance and municipal trade licence"]
+    },
+    "excise_licence": {
+      "approvalId": "excise_licence",
+      "applicableIf": {
+        "servesAlcohol": true
+      },
+      "applicableReason": "Mandatory State Prohibition & Excise Licence required to purchase, store, dispense, or serve alcoholic beverages, wine, or spirits.",
+      "notApplicableReason": "Your business does not store, sell, or serve alcoholic beverages.",
+      "triggeredBy": ["Sale or service of alcoholic beverages"],
+      "missingInfo": ["Excise layout plan with distance from religious/educational institutions (> 100m)", "Police character verification certificate"]
+    },
+    "legal_metrology": {
+      "approvalId": "legal_metrology",
+      "applicableIf": {
+        "usesWeighingInstruments": true
+      },
+      "potentiallyApplicableIf": {
+        "sellsPackagedGoods": true
+      },
+      "applicableReason": "Mandatory verification and stamping of commercial weighing and measuring instruments under Legal Metrology Act, 2009.",
+      "potentiallyApplicableReason": "Selling or manufacturing pre-packaged commodities requires registration under Legal Metrology (Packaged Commodities) Rules, 2011.",
+      "notApplicableReason": "Business does not sell goods by weight or measure or use commercial weighing scales.",
+      "triggeredBy": ["Use of commercial weighing/measuring instruments or packaged commodities trade"],
+      "verificationConditions": ["Model approval certificate of weighing instrument", "Verification stamping by Legal Metrology Inspector"]
+    },
+    "epf": {
+      "approvalId": "epf",
+      "applicableIf": {
+        "workersThreshold": 20
+      },
+      "potentiallyApplicableIf": {
+        "workersRange": [10, 19]
+      },
+      "applicableReason": "Mandatory EPF Registration under Employees' Provident Funds and Miscellaneous Provisions Act, 1952 for any enterprise employing 20 or more workers.",
+      "potentiallyApplicableReason": "Employing between 10 and 19 workers — voluntary EPF registration is available to provide retirement benefits to attract talent.",
+      "notApplicableReason": "Workforce is below the statutory mandatory threshold of 20 employees.",
+      "triggeredBy": ["Total employee count is 20 or greater"],
+      "missingInfo": ["Employee Aadhaar and bank details for Universal Account Number (UAN) generation"]
+    },
+    "esi": {
+      "approvalId": "esi",
+      "applicableIf": {
+        "workersThreshold": 10
+      },
+      "potentiallyApplicableIf": {
+        "workersRange": [5, 9]
+      },
+      "applicableReason": "Mandatory ESI Registration under Employees' State Insurance Act, 1948 for commercial and industrial establishments employing 10 or more workers.",
+      "potentiallyApplicableReason": "Workforce close to threshold — ESI applies immediately once total headcount reaches 10 in an ESI-notified district.",
+      "notApplicableReason": "Workforce is below the statutory threshold of 10 employees.",
+      "triggeredBy": ["Total employee count is 10 or greater"],
+      "missingInfo": ["Employee salary register showing monthly gross wage structure"]
+    },
+    "groundwater_noc": {
+      "approvalId": "groundwater_noc",
+      "applicableIf": {
+        "usesGroundwater": true
+      },
+      "applicableReason": "Mandatory Ground Water Extraction NOC from Central Ground Water Authority (CGWA) / State Ground Water Department for industrial or commercial borewell extraction.",
+      "notApplicableReason": "No commercial borewell groundwater extraction (water sourced through municipal piped supply, tankers, or treated sources).",
+      "triggeredBy": ["Commercial or industrial extraction of groundwater via borewell"],
+      "missingInfo": ["Hydrogeological report of the borewell", "Digital flow meter installation with telemetry", "Rainwater harvesting and artificial recharge plan"]
+    }
+  }
+}

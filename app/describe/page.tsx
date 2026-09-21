@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -6,314 +7,785 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Utensils,
+  Factory,
+  ShoppingBag,
+  Laptop,
+  Pill,
+  Cog,
+  Building2,
+  CheckCircle2,
+  HelpCircle,
+  Sparkles,
+} from "lucide-react";
+import type { BusinessActivity, LegalStructure, JurisdictionType, Sector } from "@/lib/types";
+
+const ACTIVITY_OPTIONS: {
+  id: BusinessActivity;
+  label: string;
+  desc: string;
+  icon: React.ComponentType<{ className?: string }>;
+  defaultSector: Sector;
+}[] = [
+  {
+    id: "food_service",
+    label: "Restaurant / Cafe",
+    desc: "Dining, cloud kitchen, food court, bakery",
+    icon: Utensils,
+    defaultSector: "food",
+  },
+  {
+    id: "food_processing",
+    label: "Food Processing",
+    desc: "Food packaging, rice mill, drinking water plant",
+    icon: Factory,
+    defaultSector: "food",
+  },
+  {
+    id: "retail",
+    label: "Retail Shop / Store",
+    desc: "Clothing, groceries, electronics, general merchandise",
+    icon: ShoppingBag,
+    defaultSector: "retail_trade",
+  },
+  {
+    id: "it_services",
+    label: "Software / IT Services",
+    desc: "SaaS, tech consulting, web & mobile development",
+    icon: Laptop,
+    defaultSector: "it_tech",
+  },
+  {
+    id: "pharmacy",
+    label: "Pharmacy / Medical",
+    desc: "Retail medical store, wholesale drug distribution",
+    icon: Pill,
+    defaultSector: "healthcare_pharma",
+  },
+  {
+    id: "manufacturing",
+    label: "Manufacturing / Engineering",
+    desc: "Fabrication, plastics, chemicals, machinery",
+    icon: Cog,
+    defaultSector: "manufacturing",
+  },
+  {
+    id: "services",
+    label: "Commercial Services",
+    desc: "Consulting, logistics, education, agency",
+    icon: Building2,
+    defaultSector: "services",
+  },
+];
 
 export default function DescribePage() {
   const [step, setStep] = useState(1);
   const router = useRouter();
-  
-  // State for form data
+
+  // Step 1: Core Profile
+  const [activity, setActivity] = useState<BusinessActivity>("food_service");
+  const [legalStructure, setLegalStructure] = useState<LegalStructure>("sole_proprietorship");
   const [description, setDescription] = useState("");
   const [city, setCity] = useState("");
-  const [stateName, setStateName] = useState("");
-  
-  const [investment, setInvestment] = useState("");
-  const [workers, setWorkers] = useState("");
-  const [power, setPower] = useState<"yes" | "no" | null>(null);
-  const [food, setFood] = useState<"yes" | "no" | null>(null);
-  const [premises, setPremises] = useState<"owned" | "rented" | null>(null);
-  const [groundwater, setGroundwater] = useState<"yes" | "no" | null>(null);
+  const [stateName, setStateName] = useState("telangana");
+  const [jurisdictionType, setJurisdictionType] = useState<JurisdictionType>("ghmc");
+  const [premisesType, setPremisesType] = useState<"commercial" | "industrial" | "home_office">("commercial");
+
+  // Step 2: Scale & Adaptive Specifics
+  const [investment, setInvestment] = useState("25");
+  const [turnover, setTurnover] = useState("50");
+  const [workers, setWorkers] = useState("5");
+  const [premisesOwnership, setPremisesOwnership] = useState<"rented" | "owned">("rented");
+
+  // Adaptive flags
+  const [power, setPower] = useState<"yes" | "no">("yes");
+  const [food, setFood] = useState<"yes" | "no">("yes");
+  const [dineIn, setDineIn] = useState<"yes" | "no">("yes");
+  const [groundwater, setGroundwater] = useState<"yes" | "no">("no");
+  const [effluents, setEffluents] = useState<"yes" | "no">("no");
+  const [weighing, setWeighing] = useState<"yes" | "no">("no");
+  const [drugs, setDrugs] = useState<"yes" | "no">("no");
+  const [alcohol, setAlcohol] = useState<"yes" | "no">("no");
+  const [isStartup, setIsStartup] = useState<"yes" | "no">("no");
+
+  const isMfg = activity === "manufacturing" || activity === "food_processing";
+  const isFoodRelated = activity === "food_service" || activity === "food_processing";
+  const isRetail = activity === "retail";
+  const isPharmacy = activity === "pharmacy";
+
+  // Auto-sync initial state when activity changes
+  const handleActivitySelect = (act: BusinessActivity) => {
+    setActivity(act);
+    if (act === "food_service" || act === "food_processing") {
+      setFood("yes");
+    } else {
+      setFood("no");
+    }
+    if (act === "pharmacy") {
+      setDrugs("yes");
+    } else {
+      setDrugs("no");
+    }
+    if (act === "manufacturing" || act === "food_processing") {
+      setPremisesType("industrial");
+      setPower("yes");
+    } else if (act === "it_services") {
+      setPremisesType("home_office");
+      setPower("no");
+    } else {
+      setPremisesType("commercial");
+      setPower("no");
+    }
+    if (act === "retail") {
+      setWeighing("yes");
+    }
+  };
+
+  // Calculate live preview of MSME classification
+  const invNum = Number(investment) || 0;
+  const msmeTier = invNum <= 250 ? "Micro" : invNum <= 2500 ? "Small" : invNum <= 12500 ? "Medium" : "Large";
 
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
-      <div className="max-w-[720px] mx-auto">
+      <div className="max-w-[760px] mx-auto">
         {/* Breadcrumbs */}
         <div className="text-[13.5px] text-sarathi-muted mb-6 flex gap-2 items-center">
           <Link href="/" className="hover:text-sarathi-blue transition-colors">Home</Link>
           <span className="text-sarathi-faint">›</span>
           <span>New approval journey</span>
         </div>
-        
-        <Card className="border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px]">
-          <CardContent className="p-8 md:p-9">
-            <div className="text-[12.5px] font-bold text-sarathi-blue tracking-[0.04em] uppercase mb-2">
-              Step {step} of 2
+
+        <Card className="border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px] overflow-hidden bg-white">
+          {/* Top Progress bar */}
+          <div className="bg-sarathi-page border-b border-sarathi-line px-8 py-3.5 flex items-center justify-between text-[13px]">
+            <div className="flex items-center gap-2 font-semibold text-sarathi-blue">
+              <span className="w-6 h-6 rounded-full bg-sarathi-blue text-white flex items-center justify-center text-[12px] font-bold">
+                {step}
+              </span>
+              Step {step} of 2: {step === 1 ? "Business Constitution & Location" : "Scale & Operational Rules"}
             </div>
-            
+            <span className="text-sarathi-muted">Dynamic Rule Evaluator</span>
+          </div>
+
+          <CardContent className="p-8 md:p-9">
             {step === 1 ? (
-              <div>
-                <h2 className="font-serif text-[25px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                  Tell us about your business
-                </h2>
-                <p className="text-[15px] text-sarathi-muted mb-7">
-                  Describe it in your own words — we&apos;ll figure out the rest.
-                </p>
-                
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Description
-                    </label>
-                    <Textarea 
-                      placeholder="e.g. I want to start a packaged drinking water plant in Ghatkesar with 10 workers"
-                      className="min-h-[120px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 py-3 text-[15px] focus-visible:ring-0 focus-visible:border-sarathi-blue focus-visible:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all resize-y"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                        City / Area
-                      </label>
-                      <Input 
-                        placeholder="e.g. Ghatkesar"
-                        className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus-visible:ring-0 focus-visible:border-sarathi-blue focus-visible:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                        State
-                      </label>
-                      <Select value={stateName} onValueChange={(v) => setStateName(v || "")}>
-                        <SelectTrigger className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 focus:border-sarathi-blue focus:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all data-[state=open]:border-sarathi-blue data-[state=open]:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]">
-                          <SelectValue placeholder="Select a state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="telangana">Telangana</SelectItem>
-                          <SelectItem value="maharashtra">Maharashtra</SelectItem>
-                          <SelectItem value="other">Other State</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+              <div className="space-y-7">
+                <div>
+                  <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
+                    What type of business are you starting?
+                  </h2>
+                  <p className="text-[15px] text-sarathi-muted">
+                    Approvals in India depend on your business activity, legal structure, and jurisdiction.
+                  </p>
+                </div>
+
+                {/* Activity Grid */}
+                <div className="space-y-2.5">
+                  <label className="font-semibold text-[14px] text-sarathi-ink block">
+                    1. Primary Business Activity
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {ACTIVITY_OPTIONS.map((opt) => {
+                      const Icon = opt.icon;
+                      const isSelected = activity === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => handleActivitySelect(opt.id)}
+                          className={`p-3.5 rounded-[10px] border-[1.5px] cursor-pointer transition-all flex items-start gap-3 ${
+                            isSelected
+                              ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_2px_var(--color-sarathi-blue-050)]"
+                              : "border-sarathi-line hover:border-sarathi-blue-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <div
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                              isSelected
+                                ? "bg-sarathi-blue text-white"
+                                : "bg-[#f1f5f9] text-sarathi-ink"
+                            }`}
+                          >
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-[14.5px] text-sarathi-ink leading-snug">
+                              {opt.label}
+                            </div>
+                            <div className="text-[12px] text-sarathi-muted mt-0.5 leading-tight">
+                              {opt.desc}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                
-                <div className="mt-9 pt-5 border-t border-sarathi-line flex justify-end">
-                  <button 
+
+                {/* Legal Constitution */}
+                <div className="space-y-2">
+                  <label className="font-semibold text-[14px] text-sarathi-ink block">
+                    2. Legal Constitution / Structure
+                  </label>
+                  <Select
+                    value={legalStructure}
+                    onValueChange={(v) => setLegalStructure(v as LegalStructure)}
+                  >
+                    <SelectTrigger className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 focus:border-sarathi-blue transition-all">
+                      <SelectValue placeholder="Select business constitution" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sole_proprietorship">Sole Proprietorship (Individual / Sole Trader)</SelectItem>
+                      <SelectItem value="partnership">Partnership Firm (Indian Partnership Act, 1932)</SelectItem>
+                      <SelectItem value="llp">Limited Liability Partnership (LLP)</SelectItem>
+                      <SelectItem value="private_limited">Private Limited Company (Pvt Ltd — MCA SPICe+)</SelectItem>
+                      <SelectItem value="opc">One Person Company (OPC)</SelectItem>
+                      <SelectItem value="public_limited">Public Limited Company</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[12px] text-sarathi-faint">
+                    Determines corporate incorporation (MCA SPICe+), partnership deeds, or individual tax registrations.
+                  </p>
+                </div>
+
+                {/* Location & Jurisdiction */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-[13.5px] text-sarathi-ink block">
+                      State
+                    </label>
+                    <Select value={stateName} onValueChange={(v) => setStateName(v || "telangana")}>
+                      <SelectTrigger className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="telangana">Telangana</SelectItem>
+                        <SelectItem value="maharashtra">Maharashtra</SelectItem>
+                        <SelectItem value="other">Other State</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-[13.5px] text-sarathi-ink block">
+                      City / Area
+                    </label>
+                    <Input
+                      placeholder="e.g. Hyderabad, Ghatkesar"
+                      className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-[13.5px] text-sarathi-ink block">
+                      Local Authority Jurisdiction
+                    </label>
+                    <Select
+                      value={jurisdictionType}
+                      onValueChange={(v) => setJurisdictionType(v as JurisdictionType)}
+                    >
+                      <SelectTrigger className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ghmc">Municipal Corporation (GHMC / BMC)</SelectItem>
+                        <SelectItem value="municipality">Urban Municipality (CDMA)</SelectItem>
+                        <SelectItem value="panchayat">Rural Gram Panchayat</SelectItem>
+                        <SelectItem value="industrial_area">Industrial Area (TSIIC / MIDC)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Premises Type */}
+                <div className="space-y-2">
+                  <label className="font-semibold text-[14px] text-sarathi-ink block">
+                    Premises Setup
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { id: "commercial", label: "Commercial Premises", note: "Office, Retail Shop, Restaurant" },
+                      { id: "industrial", label: "Industrial Factory / Shed", note: "Manufacturing floor or plant" },
+                      { id: "home_office", label: "Home Office / Virtual", note: "Remote digital or consulting" },
+                    ].map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => setPremisesType(p.id as any)}
+                        className={`p-3 rounded-[8px] border-[1.5px] cursor-pointer transition-all ${
+                          premisesType === p.id
+                            ? "border-sarathi-blue bg-sarathi-blue-050 font-medium"
+                            : "border-sarathi-line hover:border-sarathi-line-strong"
+                        }`}
+                      >
+                        <div className="text-[14px] font-semibold text-sarathi-ink">{p.label}</div>
+                        <div className="text-[11.5px] text-sarathi-muted mt-0.5">{p.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Business Description */}
+                <div className="space-y-1.5">
+                  <label className="font-semibold text-[14px] text-sarathi-ink block">
+                    Business Summary / Name (Optional)
+                  </label>
+                  <Textarea
+                    placeholder="e.g. Setting up an automated snacks processing plant with cold storage"
+                    className="min-h-[80px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 py-2.5 text-[14.5px]"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+
+                {/* Step 1 Actions */}
+                <div className="pt-4 border-t border-sarathi-line flex justify-end">
+                  <button
                     onClick={() => {
                       setStep(2);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
-                    className="inline-flex items-center justify-center bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[44px] px-6 rounded-[8px] transition-colors"
+                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[46px] px-7 rounded-[8px] transition-colors shadow-sm"
                   >
-                    Continue &rarr;
+                    Continue to Specifics &rarr;
                   </button>
                 </div>
               </div>
             ) : (
-              <div>
-                <h2 className="font-serif text-[25px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                  A few details
-                </h2>
-                <p className="text-[15px] text-sarathi-muted mb-7">
-                  Help us narrow down the specific rules for your unit.
-                </p>
-                
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Investment in plant & machinery
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[20px] font-bold text-sarathi-blue">₹</span>
-                      <Input 
+              <div className="space-y-7">
+                <div>
+                  <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
+                    Tailored details for your {ACTIVITY_OPTIONS.find((a) => a.id === activity)?.label}
+                  </h2>
+                  <p className="text-[15px] text-sarathi-muted">
+                    We adapt the questionnaire based on your business type to ask only what regulatory statutes require.
+                  </p>
+                </div>
+
+                {/* Scale: Investment, Turnover & Workers */}
+                <div className="p-4 rounded-[10px] bg-slate-50 border border-sarathi-line space-y-4">
+                  <div className="font-bold text-[14px] text-sarathi-ink flex items-center justify-between">
+                    <span>Business Scale & Workforce</span>
+                    <span className="text-[12.5px] font-semibold text-sarathi-blue bg-sarathi-blue-050 border border-sarathi-blue-100 px-2.5 py-0.5 rounded-full">
+                      Classified: {msmeTier} MSME
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[13px] font-semibold text-sarathi-ink block">
+                        Investment in Plant/Machinery
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sarathi-blue">₹</span>
+                        <Input
+                          type="number"
+                          value={investment}
+                          onChange={(e) => setInvestment(e.target.value)}
+                          className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                          placeholder="e.g. 25"
+                        />
+                        <span className="text-[12.5px] text-sarathi-muted font-medium">lakh</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[13px] font-semibold text-sarathi-ink block">
+                        Est. Annual Turnover
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sarathi-blue">₹</span>
+                        <Input
+                          type="number"
+                          value={turnover}
+                          onChange={(e) => setTurnover(e.target.value)}
+                          className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                          placeholder="e.g. 50"
+                        />
+                        <span className="text-[12.5px] text-sarathi-muted font-medium">lakh</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[13px] font-semibold text-sarathi-ink block">
+                        Number of Employees / Workers
+                      </label>
+                      <Input
                         type="number"
-                        placeholder="0"
-                        className="h-[46px] max-w-[180px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus-visible:ring-0 focus-visible:border-sarathi-blue focus-visible:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all"
-                        value={investment}
-                        onChange={(e) => setInvestment(e.target.value)}
+                        value={workers}
+                        onChange={(e) => setWorkers(e.target.value)}
+                        className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                        placeholder="e.g. 5"
                       />
-                      <span className="text-sarathi-muted font-semibold">lakh</span>
-                    </div>
-                    <div className="text-[13px] text-sarathi-faint mt-1.5 max-w-md">
-                      Micro ≤ ₹2.5 crore · Small ≤ ₹25 crore · Medium ≤ ₹125 crore
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Number of workers
-                    </label>
-                    <Input 
-                      type="number"
-                      placeholder="0"
-                      className="h-[46px] max-w-[180px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus-visible:ring-0 focus-visible:border-sarathi-blue focus-visible:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all"
-                      value={workers}
-                      onChange={(e) => setWorkers(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Will the premises use electric power for manufacturing?
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div 
-                        onClick={() => setPower("yes")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${power === "yes" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${power === "yes" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {power === "yes" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">Yes, uses power</div>
-                          <div className="text-[12.5px] text-sarathi-muted mt-0.5">Factories Act applies at 10+ workers</div>
-                        </div>
-                      </div>
-                      
-                      <div 
-                        onClick={() => setPower("no")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${power === "no" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${power === "no" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {power === "no" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">No power used</div>
-                          <div className="text-[12.5px] text-sarathi-muted mt-0.5">Factories Act applies at 20+ workers</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Will you sell or handle food?
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div 
-                        onClick={() => setFood("yes")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${food === "yes" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${food === "yes" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {food === "yes" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">Yes</div>
-                        </div>
-                      </div>
-                      
-                      <div 
-                        onClick={() => setFood("no")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${food === "no" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${food === "no" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {food === "no" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">No</div>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Is the premises owned or rented?
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div 
-                        onClick={() => setPremises("owned")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${premises === "owned" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${premises === "owned" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {premises === "owned" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
+                  <div className="text-[12px] text-sarathi-muted flex flex-wrap gap-4 pt-1">
+                    <span>• ESI applies at 10+ employees</span>
+                    <span>• EPF applies at 20+ employees</span>
+                    <span>• Factories Act applies at 10+ (with power)</span>
+                  </div>
+                </div>
+
+                {/* Adaptive Activity Questions */}
+                <div className="space-y-5">
+                  <div className="font-bold text-[14.5px] text-sarathi-ink border-b border-sarathi-line pb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-sarathi-blue" />
+                    Activity-Specific Compliance Triggers
+                  </div>
+
+                  {/* Food questions */}
+                  {isFoodRelated && (
+                    <div className="space-y-3 p-4 rounded-[10px] bg-white border border-sarathi-line">
+                      <div className="font-semibold text-[14px] text-sarathi-ink">
+                        Will you handle, prepare, package, or sell food items?
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setFood("yes")}
+                          className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
+                            food === "yes"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
+                          }`}
+                        >
+                          Yes, food items involved (FSSAI)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFood("no")}
+                          className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
+                            food === "no"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
+                          }`}
+                        >
+                          No food handling
+                        </button>
+                      </div>
+
+                      {activity === "food_service" && (
+                        <div className="pt-2 border-t border-slate-100">
+                          <div className="font-medium text-[13.5px] text-sarathi-ink mb-2">
+                            Will your premises offer dine-in seating to customers?
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setDineIn("yes")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] transition-all ${
+                                dineIn === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line text-sarathi-ink"
+                              }`}
+                            >
+                              Yes, Dine-in (Eating House Licence)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDineIn("no")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] transition-all ${
+                                dineIn === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line text-sarathi-ink"
+                              }`}
+                            >
+                              Takeaway / Cloud Kitchen only
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">Owned</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Manufacturing / Industrial questions */}
+                  {isMfg && (
+                    <div className="space-y-4 p-4 rounded-[10px] bg-white border border-sarathi-line">
+                      <div>
+                        <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                          Will the factory use electric power for machinery?
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPower("yes")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              power === "yes"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            Yes, electric power (Factories Act @ 10+)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPower("no")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              power === "no"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            No power / Manual (Factories Act @ 20+)
+                          </button>
                         </div>
                       </div>
-                      
-                      <div 
-                        onClick={() => setPremises("rented")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${premises === "rented" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${premises === "rented" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {premises === "rented" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
+
+                      <div>
+                        <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                          Will you extract groundwater from a borewell on the premises?
                         </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">Rented</div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setGroundwater("yes")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              groundwater === "yes"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            Yes, borewell (CGWA / State Ground Water NOC)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGroundwater("no")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              groundwater === "no"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            No, municipal / tanker water only
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                          Does your manufacturing generate industrial effluents, emissions, or chemicals?
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setEffluents("yes")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              effluents === "yes"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            Yes (Orange / Red Category PCB Consents)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEffluents("no")}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              effluents === "no"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line"
+                            }`}
+                          >
+                            No significant discharge (Green / White)
+                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-3">
-                    <label className="font-semibold text-[14.5px] text-sarathi-ink block">
-                      Will you use a borewell or groundwater?
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div 
-                        onClick={() => setGroundwater("yes")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${groundwater === "yes" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${groundwater === "yes" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {groundwater === "yes" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
+                  {/* Retail & Pharmacy Questions */}
+                  {(isRetail || isPharmacy) && (
+                    <div className="space-y-4 p-4 rounded-[10px] bg-white border border-sarathi-line">
+                      {isRetail && (
                         <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">Yes</div>
+                          <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                            Will you sell goods by weight or measurement, or use weighing instruments?
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setWeighing("yes")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                                weighing === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line"
+                              }`}
+                            >
+                              Yes (Legal Metrology Stamping)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setWeighing("no")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                                weighing === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line"
+                              }`}
+                            >
+                              No weighing instruments
+                            </button>
+                          </div>
                         </div>
+                      )}
+
+                      {isPharmacy && (
+                        <div>
+                          <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                            Will you stock, dispense, or distribute pharmaceutical medicines?
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setDrugs("yes")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                                drugs === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line"
+                              }`}
+                            >
+                              Yes, pharmaceuticals (Drug Licence Form 20/21)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDrugs("no")}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                                drugs === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line"
+                              }`}
+                            >
+                              Non-drug items only
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Special universal questions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-[10px] bg-white border border-sarathi-line">
+                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                        Will you serve or sell alcoholic beverages?
                       </div>
-                      
-                      <div 
-                        onClick={() => setGroundwater("no")}
-                        className={`border-[1.5px] rounded-[9px] px-4 py-3.5 flex gap-3 items-start cursor-pointer transition-colors bg-white hover:bg-sarathi-blue-050 hover:border-sarathi-blue-600 ${groundwater === "no" ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_3px_var(--color-sarathi-blue-050)]" : "border-sarathi-line-strong"}`}
-                      >
-                        <div className={`w-[18px] h-[18px] rounded-full border-2 shrink-0 mt-[2px] relative flex items-center justify-center ${groundwater === "no" ? "border-sarathi-blue" : "border-sarathi-line-strong"}`}>
-                          {groundwater === "no" && <div className="w-[10px] h-[10px] rounded-full bg-sarathi-blue absolute" />}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-[14.5px] text-sarathi-ink">No</div>
-                        </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAlcohol("yes")}
+                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
+                            alcohol === "yes"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line"
+                          }`}
+                        >
+                          Yes (Excise Licence)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAlcohol("no")}
+                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
+                            alcohol === "no"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line"
+                          }`}
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-[10px] bg-white border border-sarathi-line">
+                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                        Seeking DPIIT Startup India Recognition?
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsStartup("yes")}
+                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
+                            isStartup === "yes"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line"
+                          }`}
+                        >
+                          Yes (Startup India)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsStartup("no")}
+                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
+                            isStartup === "no"
+                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                              : "border-sarathi-line"
+                          }`}
+                        >
+                          No
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="mt-9 pt-5 border-t border-sarathi-line flex justify-between items-center">
-                  <button 
+
+                {/* Navigation Buttons */}
+                <div className="pt-5 border-t border-sarathi-line flex justify-between items-center">
+                  <button
                     onClick={() => {
                       setStep(1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
-                    className="text-sarathi-blue-600 hover:text-sarathi-blue-700 font-semibold px-2 py-2 transition-colors text-[14.5px]"
+                    className="text-sarathi-blue hover:text-sarathi-blue-700 font-semibold px-2 py-2 text-[14.5px] transition-colors"
                   >
-                    &larr; Back
+                    &larr; Back to Step 1
                   </button>
-                  <button 
+
+                  <button
                     onClick={() => {
-                      // Save profile to sessionStorage so checklist page can read it
+                      const selectedActivityDef = ACTIVITY_OPTIONS.find((a) => a.id === activity);
                       const profile = {
-                        description,
-                        businessLabel: "", // resolved server-side by /api/understand
-                        pollutionCategory: "white", // resolved server-side
-                        isManufacturing: false, // resolved server-side
-                        sectorApprovals: [], // resolved server-side
-                        state: stateName || "telangana",
-                        city: city || "",
+                        description: description || selectedActivityDef?.label || "Commercial Enterprise",
+                        businessLabel: selectedActivityDef?.label || "Commercial Enterprise",
+                        legalStructure,
+                        businessActivity: activity,
+                        sector: selectedActivityDef?.defaultSector || "services",
+                        state: stateName,
+                        city: city || "Hyderabad",
+                        jurisdictionType,
+                        premisesType,
+                        hasPhysicalPremises: premisesType !== "home_office",
+                        premises: premisesOwnership,
                         investmentLakh: Number(investment) || 0,
+                        annualTurnoverLakh: Number(turnover) || 0,
                         workers: Number(workers) || 0,
                         usesPower: power === "yes",
                         handlesFood: food === "yes",
-                        premises: premises || "rented",
+                        servesAlcohol: alcohol === "yes",
+                        handlesDrugs: drugs === "yes",
+                        usesWeighingInstruments: weighing === "yes",
                         usesGroundwater: groundwater === "yes",
-                        entityType: "notyet" as const,
-                        isStartup: false,
+                        waterEffluentDischarge: effluents === "yes",
+                        isStartup: isStartup === "yes",
+                        // Backward compatibility aliases
+                        entityType:
+                          legalStructure === "private_limited" || legalStructure === "public_limited" || legalStructure === "opc"
+                            ? "company"
+                            : legalStructure === "partnership" || legalStructure === "llp"
+                            ? "partnership"
+                            : "proprietor",
+                        isManufacturing: isMfg,
                       };
+
                       sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
                       router.push("/checklist");
                     }}
-                    className="inline-flex items-center justify-center bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-6 rounded-[8px] transition-colors"
+                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm"
                   >
-                    Build my checklist &rarr;
+                    Generate Dynamic Checklist &rarr;
                   </button>
                 </div>
               </div>
             )}
-            
           </CardContent>
         </Card>
       </div>
