@@ -548,6 +548,7 @@ export default function DescribePage() {
       workers: Number(workers),
       usesPower: power === "yes",
       handlesFood: food === "yes",
+      dineIn: activity === "food_service" ? dineIn === "yes" : false,
       servesAlcohol: showAlcohol && alcohol === "yes",
       handlesDrugs: drugs === "yes",
       usesWeighingInstruments: weighing === "yes",

@@ -44,7 +44,7 @@ export async function getApplyPageData(approvalId: string) {
     .select("doc_type")
     .eq("user_id", user.id);
 
-  const documentsOnFile = docs ? docs.map(d => d.doc_type) : [];
+  const documentsOnFile = docs ? docs.map((d: { doc_type: string }) => d.doc_type) : [];
 
   return {
     success: true,

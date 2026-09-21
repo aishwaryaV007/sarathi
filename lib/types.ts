@@ -70,6 +70,7 @@ export interface BusinessProfile {
   usesPower: boolean; // Uses industrial / 3-phase electric power for production
   usesMachinery?: boolean;
   handlesFood: boolean;
+  dineIn?: boolean;
   servesAlcohol?: boolean;
   handlesDrugs?: boolean;
   usesWeighingInstruments?: boolean;
@@ -97,6 +98,9 @@ export interface Approval {
   documents: string[];
   icon: string;
   portalUrl: string;
+
+  /** Approval tier level: mandatory vs recommended */
+  level?: "mandatory" | "recommended";
 
   /** Multi-tier applicability determination. */
   applicability: ApplicabilityStatus;
@@ -144,8 +148,12 @@ export interface ChecklistResult {
   /** Legacy / Flat list of actionable approvals (Applicable + Potentially Applicable) */
   approvals: Approval[];
 
-  /** Strictly Applicable (Mandatory) approvals */
+  /** Strictly Applicable (Mandatory + Recommended) approvals */
   applicableApprovals: Approval[];
+  /** Strictly Mandatory approvals */
+  mandatoryApprovals: Approval[];
+  /** Recommended approvals (e.g. Udyam MSME, DPIIT) */
+  recommendedApprovals: Approval[];
   /** Approvals needing specific verification or local threshold review */
   potentiallyApplicableApprovals: Approval[];
   /** Approvals explicitly evaluated as not required for this profile, with reasons */

@@ -52,3 +52,34 @@ export async function getLatestProject() {
 
   return { success: true, profile };
 }
+
+export async function getUserDocuments(): Promise<{ authenticated: boolean; documentTypes: string[] }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { authenticated: false, documentTypes: [] };
+    }
+
+    const { data, error } = await supabase
+      .from("documents")
+      .select("doc_type, status")
+      .eq("user_id", user.id);
+
+    if (error || !data) {
+      return { authenticated: true, documentTypes: [] };
+    }
+
+    const documentTypes = data
+      .filter((d: any) => d.status === "verified" || !d.status)
+      .map((d: any) => String(d.doc_type).trim());
+
+    return { authenticated: true, documentTypes };
+  } catch {
+    return { authenticated: false, documentTypes: [] };
+  }
+}
+

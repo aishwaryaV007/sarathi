@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLatestProject } from "./actions";
+import { getLatestProject, getUserDocuments } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -27,8 +27,6 @@ import {
   Landmark,
 } from "lucide-react";
 import type { ChecklistResult, Approval, BusinessProfile, SchemeMatch } from "@/lib/types";
-
-const ON_FILE_DOCS = ["PAN", "Aadhaar", "Bank account", "Premises proof", "ID proof"];
 
 /** Map the icon string from catalog.json to a Lucide component. */
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -60,6 +58,8 @@ export default function ChecklistPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"applicable" | "potential" | "not_applicable">("applicable");
+  const [userDocs, setUserDocs] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchChecklist() {
@@ -80,14 +80,20 @@ export default function ChecklistPage() {
           }
         }
 
-        const res = await fetch("/api/checklist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profile }),
-        });
+        const [res, docRes] = await Promise.all([
+          fetch("/api/checklist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profile }),
+          }),
+          getUserDocuments().catch(() => ({ authenticated: false, documentTypes: [] })),
+        ]);
+
         if (!res.ok) throw new Error("API error");
         const data = await res.json();
         setResult(data.result);
+        setIsAuthenticated(Boolean(docRes?.authenticated));
+        setUserDocs(docRes?.documentTypes || []);
       } catch (err) {
         console.error("Fetch checklist error:", err);
         setError("Failed to generate your rule-based checklist. Please try again.");
@@ -132,17 +138,168 @@ export default function ChecklistPage() {
   const pollutionColor = POLLUTION_COLORS[result.pollution] || POLLUTION_COLORS.white;
 
   const applicable = result.applicableApprovals || [];
+  const mandatory = result.mandatoryApprovals || applicable.filter((a) => a.level === "mandatory" || !a.level);
+  const recommended = result.recommendedApprovals || applicable.filter((a) => a.level === "recommended");
   const potential = result.potentiallyApplicableApprovals || [];
   const notApplicable = result.notApplicableApprovals || [];
+
+  function isDocumentOnFile(docName: string): boolean {
+    if (!isAuthenticated || userDocs.length === 0) return false;
+    const target = docName.toLowerCase().trim();
+    return userDocs.some((d) => {
+      const userDoc = d.toLowerCase().trim();
+      return userDoc === target || target.includes(userDoc) || userDoc.includes(target);
+    });
+  }
+
+  function renderApprovalAccordionItem(app: Approval, isMandatory: boolean) {
+    const IconComp = getIcon(app.icon);
+    return (
+      <AccordionItem
+        value={app.id}
+        key={app.id}
+        className="bg-white border border-sarathi-line rounded-[12px] overflow-hidden data-[state=open]:border-sarathi-blue-600 transition-colors shadow-sm"
+      >
+        <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-sarathi-blue-050 transition-colors [&[data-state=open]]:bg-sarathi-blue-050">
+          <div className="flex items-center justify-between w-full pr-4 text-left">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-[#f4f6f9] border border-sarathi-line flex items-center justify-center shrink-0">
+                <IconComp className="w-5 h-5 text-sarathi-blue" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[16px] text-sarathi-ink">{app.name}</span>
+                  {isMandatory ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                      ✓ Mandatory
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                      ★ Recommended
+                    </span>
+                  )}
+                </div>
+                <div className="text-[13px] text-sarathi-muted mt-0.5">{app.department}</div>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-[12.5px] font-semibold text-sarathi-muted shrink-0 bg-sarathi-page px-2.5 py-1.5 rounded-md border border-sarathi-line">
+              <Clock className="w-3.5 h-3.5" />
+              {app.timeline}
+            </div>
+          </div>
+        </AccordionTrigger>
+
+        <AccordionContent className="px-5 pb-5 pt-3 border-t border-sarathi-line">
+          {/* Statute Link */}
+          {app.sourceUrl ? (
+            <a
+              href={app.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-3 hover:bg-green-100 transition-colors"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Required under {app.statute} <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+            </a>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-3">
+              <Shield className="w-3.5 h-3.5" />
+              Required under {app.statute}
+            </div>
+          )}
+
+          {/* Why it was triggered */}
+          <div className="p-3.5 rounded-[8px] bg-slate-50 border border-slate-200 mb-4 text-[13.5px]">
+            <div className="font-semibold text-sarathi-ink mb-1 flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-sarathi-blue" />
+              Why this applies:
+            </div>
+            <p className="text-sarathi-ink leading-relaxed">{app.reason}</p>
+            {app.triggeredBy && app.triggeredBy.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {app.triggeredBy.map((trig, idx) => (
+                  <span
+                    key={idx}
+                    className="text-[11.5px] bg-white border border-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded"
+                  >
+                    Rule trigger: {trig}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Missing / Required Documents */}
+          <div className="mb-5">
+            <div className="text-[13px] font-bold text-sarathi-ink mb-2">Documents & Information Required</div>
+            <div className="flex flex-wrap gap-2">
+              {app.documents.map((doc) => {
+                const onFile = isDocumentOnFile(doc);
+                return (
+                  <div
+                    key={doc}
+                    className={`inline-flex items-center gap-1.5 text-[12.5px] px-2.5 py-1.5 rounded-md border ${
+                      onFile
+                        ? "bg-[#f0f9ff] border-[#bae6fd] text-[#0284c7]"
+                        : "bg-sarathi-page border-sarathi-line text-sarathi-ink"
+                    }`}
+                  >
+                    {onFile ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#0284c7]" />
+                    ) : (
+                      <FileText className="w-3.5 h-3.5 text-sarathi-faint shrink-0" />
+                    )}
+                    <span>{doc}</span>
+                    {onFile ? (
+                      <span className="text-[11px] font-semibold text-[#0284c7] ml-0.5">(on file)</span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded ml-0.5">
+                        Required
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
+            <Link
+              href={`/apply/${app.id}`}
+              className="inline-flex items-center justify-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[14px] h-9 px-4 rounded-[7px] transition-colors"
+            >
+              Apply Now
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+            {app.portalUrl && (
+              <a
+                href={app.portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-sarathi-blue hover:underline"
+              >
+                Official Form Portal <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-140px)] py-10 px-6 bg-[#fafbfc]">
       <div className="max-w-[1140px] mx-auto">
         {/* Breadcrumbs */}
         <div className="text-[13.5px] text-sarathi-muted mb-6 flex gap-2 items-center">
-          <Link href="/" className="hover:text-sarathi-blue transition-colors">Home</Link>
+          <Link href="/" className="hover:text-sarathi-blue transition-colors">
+            Home
+          </Link>
           <span className="text-sarathi-faint">›</span>
-          <Link href="/describe" className="hover:text-sarathi-blue transition-colors">Approval Journey</Link>
+          <Link href="/describe" className="hover:text-sarathi-blue transition-colors">
+            Approval Journey
+          </Link>
           <span className="text-sarathi-faint">›</span>
           <span className="font-semibold text-sarathi-ink">Rule-Based Checklist</span>
         </div>
@@ -150,15 +307,13 @@ export default function ChecklistPage() {
         {/* ========================================================================= */}
         {/* YOUR BUSINESS PROFILE SUMMARY BAR */}
         {/* ========================================================================= */}
-        <div className="bg-white border border-sarathi-line rounded-[12px] p-5 mb-8 shadow-sm">
+        <div className="bg-white border border-sarathi-line rounded-[12px] p-5 mb-6 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-sarathi-line pb-4 mb-4">
             <div>
               <div className="text-[12px] font-bold uppercase tracking-wider text-sarathi-blue mb-1">
                 Evaluated Business Profile
               </div>
-              <h1 className="font-serif font-bold text-[24px] text-sarathi-ink">
-                {result.businessLabel}
-              </h1>
+              <h1 className="font-serif font-bold text-[24px] text-sarathi-ink">{result.businessLabel}</h1>
             </div>
             <Link
               href="/describe"
@@ -181,7 +336,11 @@ export default function ChecklistPage() {
               <div className="font-semibold text-sarathi-ink capitalize">
                 {p.city || "Local"}, {p.state || "Telangana"}
                 <span className="block text-[11px] text-sarathi-muted font-normal uppercase">
-                  {p.jurisdictionType === "ghmc" ? "Metropolitan ULB" : p.jurisdictionType === "panchayat" ? "Gram Panchayat" : "Municipality"}
+                  {p.jurisdictionType === "ghmc"
+                    ? "Metropolitan ULB"
+                    : p.jurisdictionType === "panchayat"
+                    ? "Gram Panchayat"
+                    : "Municipality"}
                 </span>
               </div>
             </div>
@@ -195,9 +354,7 @@ export default function ChecklistPage() {
 
             <div>
               <div className="text-sarathi-muted text-[11.5px] mb-0.5">MSME Classification</div>
-              <div className="font-semibold text-sarathi-ink">
-                {result.msme} MSME
-              </div>
+              <div className="font-semibold text-sarathi-ink">{result.msme} MSME</div>
             </div>
 
             <div>
@@ -223,6 +380,35 @@ export default function ChecklistPage() {
                 {result.factoryApplies ? "Applies (10+ with power)" : "Does not apply"}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* DYNAMIC SUMMARY BAR: "{count} approvals apply to your {activity} in {city}" */}
+        {/* ========================================================================= */}
+        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-blue-50/90 border border-sarathi-blue-200 rounded-[12px] px-5 py-3.5 mb-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-sarathi-blue text-white flex items-center justify-center font-bold text-[15px] shrink-0 shadow-sm">
+              {applicable.length}
+            </div>
+            <div className="text-[14.5px] text-sarathi-ink">
+              <span className="font-bold text-sarathi-blue">
+                {applicable.length} approval{applicable.length === 1 ? "" : "s"} apply
+              </span>{" "}
+              to your{" "}
+              <span className="font-semibold capitalize">
+                {p.businessActivity ? p.businessActivity.replace(/_/g, " ") : result.businessLabel}
+              </span>{" "}
+              in <span className="font-semibold capitalize">{p.city ? p.city.trim() : "your city"}</span>.
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[12px] shrink-0">
+            <span className="bg-white border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md font-semibold">
+              {mandatory.length} Mandatory
+            </span>
+            <span className="bg-white border border-amber-200 text-amber-800 px-2.5 py-1 rounded-md font-semibold">
+              {recommended.length} Recommended
+            </span>
           </div>
         </div>
 
@@ -282,152 +468,81 @@ export default function ChecklistPage() {
 
             {/* TAB 1: APPLICABLE APPROVALS */}
             {activeTab === "applicable" && (
-              <div className="space-y-4">
-                <div className="text-[14px] text-sarathi-muted mb-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-sarathi-green" />
-                  These approvals have been confirmed mandatory based on your activity, workforce, and legal profile.
-                </div>
-
+              <div className="space-y-6">
                 {applicable.length === 0 ? (
-                  <div className="p-8 text-center bg-white rounded-xl border border-sarathi-line text-sarathi-muted">
-                    No mandatory approvals identified for this combination.
+                  <div className="p-10 text-center bg-white rounded-xl border border-sarathi-line shadow-sm space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div className="text-[17px] font-bold text-sarathi-ink">
+                      No statutory approvals required for this business configuration
+                    </div>
+                    <p className="text-[13.5px] text-sarathi-muted max-w-md mx-auto">
+                      Based on the answers provided, no mandatory or recommended approvals apply to your business. You can review the &ldquo;Needs Verification&rdquo; tab or modify your answers.
+                    </p>
+                    <div className="pt-2">
+                      <Link
+                        href="/describe"
+                        className="inline-flex items-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[13.5px] h-9 px-4 rounded-[7px] transition-colors"
+                      >
+                        Modify Profile Details
+                      </Link>
+                    </div>
                   </div>
                 ) : (
-                  <Accordion className="space-y-3" defaultValue={[applicable[0]?.id]}>
-                    {applicable.map((app: Approval) => {
-                      const IconComp = getIcon(app.icon);
-                      return (
-                        <AccordionItem
-                          value={app.id}
-                          key={app.id}
-                          className="bg-white border border-sarathi-line rounded-[12px] overflow-hidden data-[state=open]:border-sarathi-blue-600 transition-colors shadow-sm"
-                        >
-                          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-sarathi-blue-050 transition-colors [&[data-state=open]]:bg-sarathi-blue-050">
-                            <div className="flex items-center justify-between w-full pr-4 text-left">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-[#f4f6f9] border border-sarathi-line flex items-center justify-center shrink-0">
-                                  <IconComp className="w-5 h-5 text-sarathi-blue" />
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-[16px] text-sarathi-ink">{app.name}</span>
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sarathi-green bg-green-50 border border-green-200 px-2 py-0.5 rounded">
-                                      ✓ Applicable
-                                    </span>
-                                  </div>
-                                  <div className="text-[13px] text-sarathi-muted mt-0.5">
-                                    {app.department}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="hidden sm:flex items-center gap-1.5 text-[12.5px] font-semibold text-sarathi-muted shrink-0 bg-sarathi-page px-2.5 py-1.5 rounded-md border border-sarathi-line">
-                                <Clock className="w-3.5 h-3.5" />
-                                {app.timeline}
-                              </div>
+                  <>
+                    {/* SECTION 1: MANDATORY APPROVALS */}
+                    {mandatory.length > 0 && (
+                      <div className="space-y-3.5">
+                        <div className="bg-emerald-50/80 border border-emerald-200 rounded-[10px] p-4 flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                            <Shield className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-[15px] text-emerald-950 flex items-center gap-2">
+                              Mandatory for your business
+                              <span className="text-[11.5px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                                {mandatory.length} Required
+                              </span>
                             </div>
-                          </AccordionTrigger>
+                            <p className="text-[13px] text-emerald-800 mt-0.5 leading-normal">
+                              Legally required before commencing operations, occupying physical premises, or hiring employees under statutory acts.
+                            </p>
+                          </div>
+                        </div>
 
-                          <AccordionContent className="px-5 pb-5 pt-3 border-t border-sarathi-line">
-                            {/* Statute & Trigger Reason */}
-                            {app.sourceUrl ? (
-                              <a
-                                href={app.sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-3 hover:bg-green-100 transition-colors"
-                              >
-                                <Shield className="w-3.5 h-3.5" />
-                                Required under {app.statute} <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
-                              </a>
-                            ) : (
-                              <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-3">
-                                <Shield className="w-3.5 h-3.5" />
-                                Required under {app.statute}
-                              </div>
-                            )}
+                        <Accordion className="space-y-3" defaultValue={[mandatory[0]?.id]}>
+                          {mandatory.map((app: Approval) => renderApprovalAccordionItem(app, true))}
+                        </Accordion>
+                      </div>
+                    )}
 
-                            {/* Why it was triggered */}
-                            <div className="p-3.5 rounded-[8px] bg-slate-50 border border-slate-200 mb-4 text-[13.5px]">
-                              <div className="font-semibold text-sarathi-ink mb-1 flex items-center gap-1.5">
-                                <Info className="w-4 h-4 text-sarathi-blue" />
-                                Why this applies:
-                              </div>
-                              <p className="text-sarathi-ink leading-relaxed">
-                                {app.reason}
-                              </p>
-                              {app.triggeredBy && app.triggeredBy.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                                  {app.triggeredBy.map((trig, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="text-[11.5px] bg-white border border-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded"
-                                    >
-                                      Rule trigger: {trig}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                    {/* SECTION 2: RECOMMENDED REGISTRATIONS & BENEFITS */}
+                    {recommended.length > 0 && (
+                      <div className="space-y-3.5 pt-2">
+                        <div className="bg-amber-50/80 border border-amber-200 rounded-[10px] p-4 flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                            <BadgeCheck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-[15px] text-amber-950 flex items-center gap-2">
+                              Recommended for your business
+                              <span className="text-[11.5px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                                {recommended.length} Recommended
+                              </span>
                             </div>
+                            <p className="text-[13px] text-amber-800 mt-0.5 leading-normal">
+                              Voluntary registrations unlocking government subsidies, tax benefits (80-IAC), collateral-free credit, and statutory delayed payment protection.
+                            </p>
+                          </div>
+                        </div>
 
-                            {/* Missing / Required Documents */}
-                            <div className="mb-5">
-                              <div className="text-[13px] font-bold text-sarathi-ink mb-2">
-                                Documents & Information Required
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {app.documents.map((doc) => {
-                                  const isOnFile = ON_FILE_DOCS.includes(doc);
-                                  return (
-                                    <div
-                                      key={doc}
-                                      className={`inline-flex items-center gap-1.5 text-[12.5px] px-2.5 py-1.5 rounded-md border ${
-                                        isOnFile
-                                          ? "bg-[#f0f9ff] border-[#bae6fd] text-[#0284c7]"
-                                          : "bg-sarathi-page border-sarathi-line text-sarathi-ink"
-                                      }`}
-                                    >
-                                      {isOnFile ? (
-                                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                                      ) : (
-                                        <FileText className="w-3.5 h-3.5 text-sarathi-faint shrink-0" />
-                                      )}
-                                      {doc}
-                                      {isOnFile && (
-                                        <span className="text-[11px] font-semibold opacity-75 ml-0.5">
-                                          (on file)
-                                        </span>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
-                              <Link
-                                href={`/apply/${app.id}`}
-                                className="inline-flex items-center justify-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[14px] h-9 px-4 rounded-[7px] transition-colors"
-                              >
-                                Apply Now
-                                <ChevronRight className="w-4 h-4" />
-                              </Link>
-                              {app.portalUrl && (
-                                <a
-                                  href={app.portalUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-sarathi-blue hover:underline"
-                                >
-                                  Official Form Portal <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
+                        <Accordion className="space-y-3" defaultValue={[recommended[0]?.id]}>
+                          {recommended.map((app: Approval) => renderApprovalAccordionItem(app, false))}
+                        </Accordion>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -467,9 +582,7 @@ export default function ChecklistPage() {
                                       ⚠ Needs Verification
                                     </span>
                                   </div>
-                                  <div className="text-[13px] text-sarathi-muted mt-0.5">
-                                    {app.department}
-                                  </div>
+                                  <div className="text-[13px] text-sarathi-muted mt-0.5">{app.department}</div>
                                 </div>
                               </div>
                               <div className="hidden sm:flex items-center gap-1.5 text-[12.5px] font-semibold text-sarathi-muted shrink-0 bg-sarathi-page px-2.5 py-1.5 rounded-md border border-sarathi-line">
@@ -486,12 +599,8 @@ export default function ChecklistPage() {
                             </div>
 
                             <div className="p-3.5 rounded-[8px] bg-[#fffdfa] border border-amber-200 mb-4 text-[13.5px]">
-                              <div className="font-semibold text-amber-900 mb-1">
-                                Applicability Condition:
-                              </div>
-                              <p className="text-sarathi-ink leading-relaxed">
-                                {app.reason}
-                              </p>
+                              <div className="font-semibold text-amber-900 mb-1">Applicability Condition:</div>
+                              <p className="text-sarathi-ink leading-relaxed">{app.reason}</p>
                               {app.verificationConditions && (
                                 <div className="mt-3 pt-2.5 border-t border-amber-100 space-y-1">
                                   <div className="text-[12px] font-bold uppercase tracking-wider text-amber-800">
@@ -602,17 +711,13 @@ export default function ChecklistPage() {
                       key={scheme.id}
                       className="p-3 bg-white border border-amber-100 rounded-[8px] space-y-1.5 hover:border-amber-300 transition-colors"
                     >
-                      <div className="font-bold text-[13.5px] text-sarathi-ink leading-snug">
-                        {scheme.name}
-                      </div>
+                      <div className="font-bold text-[13.5px] text-sarathi-ink leading-snug">{scheme.name}</div>
                       <div className="text-[12px] font-semibold text-amber-800 flex items-center gap-1.5">
                         <span>💰 {scheme.subsidy}</span>
                         <span className="text-slate-300">|</span>
                         <span>Max {scheme.maxAmount}</span>
                       </div>
-                      <p className="text-[12px] text-sarathi-muted leading-normal">
-                        {scheme.eligibilityReason}
-                      </p>
+                      <p className="text-[12px] text-sarathi-muted leading-normal">{scheme.eligibilityReason}</p>
                     </div>
                   ))}
                 </div>
@@ -635,22 +740,38 @@ export default function ChecklistPage() {
                 DigiLocker Reusable Vault
               </div>
               <CardContent className="p-5">
-                <p className="text-[12.5px] text-sarathi-muted mb-3.5 leading-relaxed">
-                  These verified credentials automatically sync across all state and central portal applications.
-                </p>
-                <div className="space-y-2">
-                  {ON_FILE_DOCS.filter((d) => d !== "ID proof").map((doc) => (
-                    <div key={doc} className="flex items-center justify-between text-[13px] py-1 border-b border-slate-50 last:border-0">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-sarathi-green shrink-0" />
-                        <span className="font-medium text-sarathi-ink">{doc}</span>
-                      </div>
-                      <span className="text-[11px] text-sarathi-green font-semibold bg-green-50 px-2 py-0.5 rounded">
-                        Verified
-                      </span>
+                {isAuthenticated && userDocs.length > 0 ? (
+                  <>
+                    <p className="text-[12.5px] text-sarathi-muted mb-3.5 leading-relaxed">
+                      These verified credentials in your vault automatically sync across all applications:
+                    </p>
+                    <div className="space-y-2">
+                      {userDocs.map((doc) => (
+                        <div
+                          key={doc}
+                          className="flex items-center justify-between text-[13px] py-1 border-b border-slate-50 last:border-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-sarathi-green shrink-0" />
+                            <span className="font-medium text-sarathi-ink">{doc}</span>
+                          </div>
+                          <span className="text-[11px] text-sarathi-green font-semibold bg-green-50 px-2 py-0.5 rounded">
+                            On file
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <div className="text-center py-2 space-y-2">
+                    <p className="text-[12.5px] text-sarathi-muted leading-relaxed">
+                      No documents on file in this session. Log in and upload credentials to your vault to automatically reuse them across approvals.
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-sarathi-blue bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
+                      Vault Ready for Uploads
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

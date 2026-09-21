@@ -71,8 +71,14 @@ const RULES = (rulesData as any).rules as Record<string, any>;
 const SCHEMES = schemesData as unknown as SchemeEntry[];
 
 // ---------------------------------------------------------------------------
-// Pure Classifiers
+// MSME Thresholds Config (easy to update in one place)
 // ---------------------------------------------------------------------------
+
+export const MSME_THRESHOLDS = {
+  Micro: { maxInvestmentLakh: 250, maxTurnoverLakh: 1000 },
+  Small: { maxInvestmentLakh: 2500, maxTurnoverLakh: 10000 },
+  Medium: { maxInvestmentLakh: 12500, maxTurnoverLakh: 25000 },
+} as const;
 
 /** MSME category from investment and turnover. Notification S.O. 1364(E), 2025. */
 export function classifyMsme(investmentLakh: number, turnoverLakh?: number): MsmeCategory {
@@ -80,11 +86,11 @@ export function classifyMsme(investmentLakh: number, turnoverLakh?: number): Msm
   const turn = Number(turnoverLakh) || 0;
 
   // Micro: Investment <= ₹2.5 Cr (250 Lakhs) and Turnover <= ₹10 Cr (1000 Lakhs)
-  if (inv <= 250 && turn <= 1000) return "Micro";
+  if (inv <= MSME_THRESHOLDS.Micro.maxInvestmentLakh && turn <= MSME_THRESHOLDS.Micro.maxTurnoverLakh) return "Micro";
   // Small: Investment <= ₹25 Cr (2500 Lakhs) and Turnover <= ₹100 Cr (10000 Lakhs)
-  if (inv <= 2500 && turn <= 10000) return "Small";
+  if (inv <= MSME_THRESHOLDS.Small.maxInvestmentLakh && turn <= MSME_THRESHOLDS.Small.maxTurnoverLakh) return "Small";
   // Medium: Investment <= ₹125 Cr (12500 Lakhs) and Turnover <= ₹250 Cr (25000 Lakhs)
-  if (inv <= 12500 && turn <= 25000) return "Medium";
+  if (inv <= MSME_THRESHOLDS.Medium.maxInvestmentLakh && turn <= MSME_THRESHOLDS.Medium.maxTurnoverLakh) return "Medium";
   return "Large";
 }
 
@@ -93,6 +99,409 @@ export function factoryApplies(workers: number, usesPower: boolean): boolean {
   const w = Number(workers) || 0;
   return usesPower ? w >= 10 : w >= 20;
 }
+
+// ---------------------------------------------------------------------------
+// Dynamic Constitution-Based Document Tailoring
+// ---------------------------------------------------------------------------
+
+export function getConstitutionDocs(legalStructure: LegalStructure, specificDocs: string[] = []): string[] {
+  let baseDocs: string[] = [];
+  switch (legalStructure) {
+    case "sole_proprietorship":
+      baseDocs = [
+        "Promoter PAN Card",
+        "Promoter Aadhaar Card",
+        "Bank account statement / cancelled cheque",
+        "Premises proof (Electricity Bill / Rent Agreement)",
+      ];
+      break;
+    case "partnership":
+      baseDocs = [
+        "Partnership Deed",
+        "PAN of Firm",
+        "Partners ID & Address Proof",
+        "Premises proof (Electricity Bill / Rent Agreement)",
+      ];
+      break;
+    case "llp":
+      baseDocs = [
+        "LLP Agreement",
+        "Certificate of Incorporation",
+        "PAN of LLP",
+        "Designated Partner DIN/DPIN",
+        "Premises proof (Electricity Bill / Rent Agreement)",
+      ];
+      break;
+    case "private_limited":
+    case "public_limited":
+    case "opc":
+      baseDocs = [
+        "Certificate of Incorporation (SPICe+)",
+        "MOA & AOA",
+        "PAN & TAN of Company",
+        "Board Resolution",
+        "Director DIN & KYC",
+        "Premises proof (Electricity Bill / Rent Agreement)",
+      ];
+      break;
+    default:
+      baseDocs = [
+        "Promoter PAN Card",
+        "Promoter Aadhaar Card",
+        "Premises proof (Electricity Bill / Rent Agreement)",
+      ];
+      break;
+  }
+  const set = new Set([...baseDocs, ...specificDocs]);
+  return Array.from(set);
+}
+
+// ---------------------------------------------------------------------------
+// Declarative Rule Approval Definitions
+// ---------------------------------------------------------------------------
+
+export interface RuleApprovalDefinition {
+  id: string;
+  name: string;
+  authority: string;
+  level: "mandatory" | "recommended";
+  appliesWhen: (answers: BusinessProfile) => boolean;
+  triggerText: (answers: BusinessProfile) => string;
+  requiredDocs: (answers: BusinessProfile) => string[];
+}
+
+export const RULE_APPROVAL_DEFINITIONS: Record<string, RuleApprovalDefinition> = {
+  company_incorporation: {
+    id: "company_incorporation",
+    name: "Company Incorporation (SPICe+)",
+    authority: "Ministry of Corporate Affairs (MCA)",
+    level: "mandatory",
+    appliesWhen: (p) => ["private_limited", "public_limited", "opc"].includes(p.legalStructure),
+    triggerText: (p) =>
+      `Corporate legal structure (${p.legalStructure.replace(/_/g, " ")}) requires statutory incorporation under the Companies Act, 2013 via SPICe+`,
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Director DIN & DSC",
+        "MOA & AOA",
+        "Registered office address proof",
+        "Declaration of Compliance",
+      ]),
+  },
+  startup_dpiit: {
+    id: "startup_dpiit",
+    name: "Startup India (DPIIT) Recognition",
+    authority: "DPIIT, Ministry of Commerce & Industry",
+    level: "recommended",
+    appliesWhen: (p) =>
+      p.isStartup === true && ["private_limited", "llp", "partnership"].includes(p.legalStructure),
+    triggerText: (p) =>
+      `Startup venture with eligible constitution (${p.legalStructure.replace(/_/g, " ")}) qualifies for 80-IAC tax exemption and seed funding recognition under Startup India`,
+    requiredDocs: () => [
+      "Incorporation / Registration Certificate",
+      "PAN of Entity",
+      "Brief write-up on innovation & scalability",
+    ],
+  },
+  udyam: {
+    id: "udyam",
+    name: "Udyam (MSME) Registration",
+    authority: "Ministry of MSME, Government of India",
+    level: "recommended",
+    appliesWhen: (p) => classifyMsme(p.investmentLakh, p.annualTurnoverLakh) !== "Large",
+    triggerText: (p) => {
+      const msme = classifyMsme(p.investmentLakh, p.annualTurnoverLakh);
+      return `Classified as ${msme} Enterprise based on investment of ₹${p.investmentLakh} lakh and turnover of ₹${p.annualTurnoverLakh || 0} lakh`;
+    },
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Aadhaar of Promoter",
+        "PAN of Enterprise / Promoter",
+        "Bank Account Details",
+      ]),
+  },
+  gst: {
+    id: "gst",
+    name: "GST Registration",
+    authority: "Central Board of Indirect Taxes & Customs (CBIC)",
+    level: "mandatory",
+    appliesWhen: (p) =>
+      Boolean(
+        (p.annualTurnoverLakh || 0) >= 20 ||
+          ["private_limited", "public_limited", "llp"].includes(p.legalStructure) ||
+          p.isManufacturing
+      ),
+    triggerText: (p) => {
+      if ((p.annualTurnoverLakh || 0) >= 20) {
+        return `Turnover (₹${p.annualTurnoverLakh} lakh) reaches or exceeds the ₹20L statutory threshold for mandatory GST registration`;
+      }
+      if (["private_limited", "public_limited", "llp"].includes(p.legalStructure)) {
+        return `Corporate entity (${p.legalStructure.replace(/_/g, " ")}) requires GSTIN for inter-state transactions and bank accounts`;
+      }
+      return `Manufacturing activity requires GST registration for Input Tax Credit`;
+    },
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Entity PAN",
+        "Premises Proof (Electricity Bill / Lease)",
+        "Bank statement / cancelled cheque",
+        "Promoter Photo & Aadhaar",
+      ]),
+  },
+  trade_licence: {
+    id: "trade_licence",
+    name: "Trade / Establishment Licence",
+    authority: "Local Municipal Body / Gram Panchayat",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.hasPhysicalPremises && p.premisesType !== "home_office"),
+    triggerText: (p) =>
+      `Operating physical commercial premises in ${p.city || "local municipality"} requires municipal trade licence`,
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Premises ownership proof / Lease agreement",
+        "Property tax payment receipt",
+        "Premises layout photo",
+      ]),
+  },
+  power_connection: {
+    id: "power_connection",
+    name: "Industrial / Commercial Power Connection",
+    authority: "State Electricity Distribution Company (DISCOM)",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.usesPower || (p.hasPhysicalPremises && p.isManufacturing)),
+    triggerText: () =>
+      `Commercial / Industrial power load sanction required from DISCOM for operations and machinery`,
+    requiredDocs: () => [
+      "Electricity bill of premises / meter details",
+      "Connected load application & wiring test report",
+      "Premises ownership or rent deed",
+    ],
+  },
+  fssai: {
+    id: "fssai",
+    name: "FSSAI Food Licence",
+    authority: "Food Safety & Standards Authority of India (FSSAI)",
+    level: "mandatory",
+    appliesWhen: (p) => p.handlesFood === true,
+    triggerText: () =>
+      `Handling, preparing, storing, or packaging food products requires statutory licensing under Food Safety & Standards Act, 2006`,
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Food safety management plan",
+        "Water testing analysis report (NABL accredited lab)",
+        "List of food categories",
+        "Premises layout plan",
+      ]),
+  },
+  eating_house: {
+    id: "eating_house",
+    name: "Eating House Licence",
+    authority: "Local Police Commissionerate / Municipal Body",
+    level: "mandatory",
+    appliesWhen: (p) =>
+      p.handlesFood === true && p.businessActivity === "food_service" && p.dineIn === true,
+    triggerText: () =>
+      `Public restaurant / dining establishment with dine-in facilities requires Police Commissionerate Eating House licence`,
+    requiredDocs: () => [
+      "Trade Licence",
+      "FSSAI Food Licence",
+      "Fire Safety NOC / Self-declaration",
+      "Dining seating layout plan",
+      "Police character verification certificate",
+    ],
+  },
+  excise_licence: {
+    id: "excise_licence",
+    name: "State Excise Licence (Liquor / Bar)",
+    authority: "State Prohibition & Excise Department",
+    level: "mandatory",
+    appliesWhen: (p) =>
+      p.servesAlcohol === true && ["food_service", "retail"].includes(p.businessActivity),
+    triggerText: () =>
+      `Selling, dispensing, or serving alcoholic beverages requires State Prohibition & Excise licence`,
+    requiredDocs: () => [
+      "Premises layout map (distance > 100m from temples/schools)",
+      "Eating House Licence / Trade Licence",
+      "Police character clearance certificate",
+      "Solvency certificate",
+    ],
+  },
+  legal_metrology: {
+    id: "legal_metrology",
+    name: "Legal Metrology Registration",
+    authority: "State Legal Metrology Department",
+    level: "mandatory",
+    appliesWhen: (p) => p.usesWeighingInstruments === true,
+    triggerText: () =>
+      `Use of commercial weighing or measuring instruments in trade requires verification and stamping under Legal Metrology Act, 2009`,
+    requiredDocs: () => [
+      "Weighing instrument model approval certificate",
+      "Purchase bill of weighing scale / instruments",
+      "Premises possession proof",
+    ],
+  },
+  drug_licence: {
+    id: "drug_licence",
+    name: "Drug Licence (Retail / Wholesale)",
+    authority: "State Drugs Control Administration",
+    level: "mandatory",
+    appliesWhen: (p) => p.handlesDrugs === true && p.businessActivity === "pharmacy",
+    triggerText: () =>
+      `Dispensing, stocking, and retailing pharmaceutical medicines requires Drug Licence (Form 20/21) under Drugs & Cosmetics Act, 1940`,
+    requiredDocs: () => [
+      "Registered Pharmacist certificate & affidavit",
+      "Refrigerator purchase invoice",
+      "Premises layout plan (min 10 sq.m)",
+      "Premises lease or ownership deed",
+    ],
+  },
+  factory_licence: {
+    id: "factory_licence",
+    name: "Factory Plan Approval & Licence",
+    authority: "State Directorate of Factories / DISH",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.isManufacturing && factoryApplies(p.workers, !!p.usesPower)),
+    triggerText: (p) =>
+      `Manufacturing workforce (${p.workers} workers) with ${p.usesPower ? "power (threshold 10+)" : "manual power (threshold 20+)"} triggers mandatory Factories Act, 1948 licence`,
+    requiredDocs: () => [
+      "Factory building layout plan approved by DISH",
+      "Machinery layout & power load list",
+      "Pollution Consent to Establish (CTE)",
+      "Local authority clearance",
+    ],
+  },
+  cte: {
+    id: "cte",
+    name: "Consent to Establish (CTE)",
+    authority: "State Pollution Control Board",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.isManufacturing && classifyPollutionCategory(p) !== "white"),
+    triggerText: (p) =>
+      `Manufacturing operations classified under ${classifyPollutionCategory(p).toUpperCase()} pollution category require Consent to Establish (CTE) before plant setup`,
+    requiredDocs: () => [
+      "Detailed Project Report (DPR)",
+      "Site layout plan",
+      "Effluent & emission treatment plant design scheme",
+      "Land conversion & title deed",
+    ],
+  },
+  cto: {
+    id: "cto",
+    name: "Consent to Operate (CTO)",
+    authority: "State Pollution Control Board",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.isManufacturing && classifyPollutionCategory(p) !== "white"),
+    triggerText: (p) =>
+      `Manufacturing operations classified under ${classifyPollutionCategory(p).toUpperCase()} pollution category require Consent to Operate (CTO) prior to commercial production`,
+    requiredDocs: () => [
+      "CTE compliance report",
+      "Pollution control equipment installation verification",
+      "Environmental management plan",
+    ],
+  },
+  groundwater_noc: {
+    id: "groundwater_noc",
+    name: "Ground Water Extraction NOC",
+    authority: "Central Ground Water Authority (CGWA) / State Ground Water Dept",
+    level: "mandatory",
+    appliesWhen: (p) => p.usesGroundwater === true,
+    triggerText: () =>
+      `Commercial borewell extraction of groundwater requires mandatory NOC from CGWA / State Ground Water Authority`,
+    requiredDocs: () => [
+      "Hydrogeological survey report",
+      "Digital flow meter specifications with telemetry",
+      "Artificial recharge and rainwater harvesting proposal",
+      "Land ownership proof",
+    ],
+  },
+  fire_noc: {
+    id: "fire_noc",
+    name: "Fire Safety NOC",
+    authority: "State Disaster Response & Fire Services",
+    level: "mandatory",
+    appliesWhen: (p) =>
+      Boolean(p.hasPhysicalPremises && (p.isManufacturing && factoryApplies(p.workers, !!p.usesPower))),
+    triggerText: () =>
+      `Factory manufacturing premises with workforce and machinery requires statutory Fire Safety NOC`,
+    requiredDocs: () => [
+      "Fire safety layout plan",
+      "Fire extinguisher and hydrant installation certificate",
+      "Water storage capacity certificate",
+    ],
+  },
+  shops: {
+    id: "shops",
+    name: "Shops & Establishment Registration",
+    authority: "State Labour Department",
+    level: "mandatory",
+    appliesWhen: (p) => Boolean(p.hasPhysicalPremises && !p.isManufacturing),
+    triggerText: () =>
+      `Physical commercial establishment operating outside the Factories Act requires registration under State Shops & Establishments Act`,
+    requiredDocs: (p) =>
+      getConstitutionDocs(p.legalStructure, [
+        "Premises rental agreement / sale deed",
+        "Employer PAN & ID",
+        "Employee list & details",
+      ]),
+  },
+  esi: {
+    id: "esi",
+    name: "ESI Registration",
+    authority: "ESIC (via Shram Suvidha)",
+    level: "mandatory",
+    appliesWhen: (p) => p.workers >= 10,
+    triggerText: (p) =>
+      `Workforce of ${p.workers} meets or exceeds statutory threshold (10+ employees) under Employees' State Insurance Act, 1948`,
+    requiredDocs: () => [
+      "Entity PAN & Certificate",
+      "Employee list with monthly wage details",
+      "Bank account details",
+      "Employer ID proof",
+    ],
+  },
+  epf: {
+    id: "epf",
+    name: "EPF Registration",
+    authority: "EPFO (via Shram Suvidha)",
+    level: "mandatory",
+    appliesWhen: (p) => p.workers >= 20,
+    triggerText: (p) =>
+      `Workforce of ${p.workers} meets or exceeds statutory threshold (20+ employees) under Employees' Provident Funds Act, 1952`,
+    requiredDocs: () => [
+      "Entity PAN & Certificate",
+      "Employee details (Aadhaar & Bank info for UAN)",
+      "Salary register & date of setup",
+      "Promoter KYC",
+    ],
+  },
+  bis_isi: {
+    id: "bis_isi",
+    name: "BIS Certification (ISI Mark)",
+    authority: "Bureau of Indian Standards (BIS)",
+    level: "mandatory",
+    appliesWhen: (p) =>
+      Boolean(
+        p.isManufacturing &&
+          (!!p.description?.toLowerCase().includes("water") || p.sector === "chemicals")
+      ),
+    triggerText: () =>
+      `Product category is under mandatory Quality Control Order (QCO) requiring Bureau of Indian Standards (BIS) ISI mark certification`,
+    requiredDocs: () => [
+      "In-house testing laboratory layout & equipment list",
+      "NABL test reports",
+      "Manufacturing process flowchart",
+      "Quality control staff qualifications",
+    ],
+  },
+};
+
+/**
+ * Tracks catalog approvals that do NOT have a condition defined.
+ * If an approval has no condition defined, it MUST NOT appear in the list.
+ */
+export const APPROVALS_NEEDING_CONDITIONS: string[] = Object.keys(CATALOG).filter(
+  (id) => !id.startsWith("_") && !RULE_APPROVAL_DEFINITIONS[id]
+);
+
 
 /** CPCB Pollution Categorisation (White, Green, Orange, Red) */
 export function classifyPollutionCategory(profile: BusinessProfile): PollutionCategory {
@@ -461,17 +870,23 @@ export function normalizeProfile(raw: Partial<BusinessProfile>): BusinessProfile
     desc.includes("chemist");
 
   const usesWeighingInstruments =
-    raw.usesWeighingInstruments === true ||
-    businessActivity === "retail" ||
-    businessActivity === "wholesale" ||
-    businessActivity === "food_processing" ||
-    desc.includes("grocery") ||
-    desc.includes("supermarket");
+    raw.usesWeighingInstruments !== undefined
+      ? raw.usesWeighingInstruments
+      : businessActivity === "retail" ||
+        businessActivity === "wholesale" ||
+        businessActivity === "food_processing" ||
+        desc.includes("grocery") ||
+        desc.includes("supermarket");
 
   const hasPhysicalPremises =
     raw.hasPhysicalPremises !== undefined
       ? raw.hasPhysicalPremises
       : raw.premises === "owned" || raw.premises === "rented" || businessActivity !== "it_services";
+
+  const dineIn =
+    raw.dineIn !== undefined
+      ? raw.dineIn
+      : businessActivity === "food_service" && !desc.includes("cloud kitchen") && !desc.includes("takeaway");
 
   return {
     description: raw.description || "",
@@ -493,6 +908,7 @@ export function normalizeProfile(raw: Partial<BusinessProfile>): BusinessProfile
     usesPower: !!raw.usesPower,
     usesMachinery: raw.usesMachinery !== undefined ? raw.usesMachinery : isManufacturing,
     handlesFood,
+    dineIn,
     servesAlcohol,
     handlesDrugs,
     usesWeighingInstruments,
@@ -609,8 +1025,8 @@ function evaluateApprovalRule(
       }
       return {
         status: "APPLICABLE",
-        reason: `Mandatory MSME registration under MSMED Act, 2006. Confirms your ${msme} status, unlocking priority lending, subsidy access, and statutory delayed payment protection (Sec 15-24).`,
-        triggeredBy: [`Classified as ${msme} Enterprise based on investment of ₹${profile.investmentLakh} lakh`],
+        reason: `MSME registration under MSMED Act, 2006. Confirms your ${msme} status based on investment of ₹${profile.investmentLakh} lakh and turnover of ₹${profile.annualTurnoverLakh || 0} lakh, unlocking priority lending, subsidy access, and statutory delayed payment protection (Sec 15-24).`,
+        triggeredBy: [`Classified as ${msme} Enterprise based on investment of ₹${profile.investmentLakh} lakh and turnover of ₹${profile.annualTurnoverLakh || 0} lakh`],
         missingInfo: rule.missingInfo,
       };
     }
@@ -925,7 +1341,7 @@ function evaluateApprovalRule(
 
     // 15. Eating House Licence
     case "eating_house": {
-      if (profile.businessActivity === "food_service") {
+      if (profile.handlesFood && profile.businessActivity === "food_service" && profile.dineIn) {
         return {
           status: "APPLICABLE",
           reason: "Mandatory Eating House Licence from the City Police Commissionerate / District Magistrate to operate a restaurant or public dining establishment.",
@@ -1081,6 +1497,7 @@ function hydrateApproval(
   if (!base) return null;
 
   const loc = resolveLocationAuthority(profile.state, profile.city, profile.jurisdictionType);
+  const ruleDef = RULE_APPROVAL_DEFINITIONS[id];
 
   let department = base.department;
   let portalUrl = base.portalUrl;
@@ -1124,17 +1541,21 @@ function hydrateApproval(
     }
   }
 
+  const documents = ruleDef ? ruleDef.requiredDocs(profile) : base.documents;
+  const level = ruleDef ? ruleDef.level : undefined;
+
   return {
     id: base.id,
     name: base.name,
     department,
     statute,
     timeline: base.timeline,
-    documents: base.documents,
+    documents,
     icon: base.icon,
     portalUrl,
     sourceUrl: base.sourceUrl,
     applicability: evalResult.status,
+    level,
     reason: evalResult.reason,
     triggeredBy: evalResult.triggeredBy,
     verificationConditions: evalResult.verificationConditions,
@@ -1253,25 +1674,54 @@ export function generateChecklist(rawProfile: Partial<BusinessProfile>): Checkli
   const needsPollutionConsent = pollution !== "white";
 
   const allApprovals: Approval[] = [];
-  const applicableApprovals: Approval[] = [];
+  const mandatoryApprovals: Approval[] = [];
+  const recommendedApprovals: Approval[] = [];
   const potentiallyApplicableApprovals: Approval[] = [];
   const notApplicableApprovals: Approval[] = [];
 
-  // Evaluate all catalog approvals
+  // Evaluate all catalog approvals against explicit rule definitions
   for (const id of Object.keys(CATALOG)) {
     if (id.startsWith("_")) continue;
-    const evalResult = evaluateApprovalRule(id, profile, msme, pollution, factory);
-    const category = (id === "cte" || id === "cto") ? pollution : undefined;
-    const hydrated = hydrateApproval(id, evalResult, profile, category);
+    const ruleDef = RULE_APPROVAL_DEFINITIONS[id];
 
-    if (hydrated) {
-      allApprovals.push(hydrated);
+    // If an approval has no condition defined, it MUST NOT appear in the list.
+    if (!ruleDef) {
+      continue;
+    }
+
+    const applies = ruleDef.appliesWhen(profile);
+    const category = (id === "cte" || id === "cto") ? pollution : undefined;
+
+    if (applies) {
+      const trigger = ruleDef.triggerText(profile);
+      const evalResult: EvaluatedApprovalOutput = {
+        status: "APPLICABLE",
+        reason: trigger,
+        triggeredBy: [trigger],
+      };
+      const hydrated = hydrateApproval(id, evalResult, profile, category);
+      if (hydrated) {
+        allApprovals.push(hydrated);
+        if (ruleDef.level === "mandatory") {
+          mandatoryApprovals.push(hydrated);
+        } else {
+          recommendedApprovals.push(hydrated);
+        }
+      }
+    } else {
+      const evalResult = evaluateApprovalRule(id, profile, msme, pollution, factory);
+      // Since ruleDef.appliesWhen was false, this cannot be strictly APPLICABLE
       if (evalResult.status === "APPLICABLE") {
-        applicableApprovals.push(hydrated);
-      } else if (evalResult.status === "POTENTIALLY_APPLICABLE") {
-        potentiallyApplicableApprovals.push(hydrated);
-      } else {
-        notApplicableApprovals.push(hydrated);
+        evalResult.status = "NOT_APPLICABLE";
+      }
+      const hydrated = hydrateApproval(id, evalResult, profile, category);
+      if (hydrated) {
+        allApprovals.push(hydrated);
+        if (evalResult.status === "POTENTIALLY_APPLICABLE") {
+          potentiallyApplicableApprovals.push(hydrated);
+        } else {
+          notApplicableApprovals.push(hydrated);
+        }
       }
     }
   }
@@ -1306,7 +1756,9 @@ export function generateChecklist(rawProfile: Partial<BusinessProfile>): Checkli
     return orderA - orderB;
   };
 
-  applicableApprovals.sort(sortFn);
+  mandatoryApprovals.sort(sortFn);
+  recommendedApprovals.sort(sortFn);
+  const applicableApprovals = [...mandatoryApprovals, ...recommendedApprovals];
   potentiallyApplicableApprovals.sort(sortFn);
   notApplicableApprovals.sort(sortFn);
 
@@ -1330,6 +1782,8 @@ export function generateChecklist(rawProfile: Partial<BusinessProfile>): Checkli
     needsPollutionConsent,
     approvals: activeApprovals,
     applicableApprovals,
+    mandatoryApprovals,
+    recommendedApprovals,
     potentiallyApplicableApprovals,
     notApplicableApprovals,
     incentives,
@@ -1337,3 +1791,4 @@ export function generateChecklist(rawProfile: Partial<BusinessProfile>): Checkli
     profileSummary: profile,
   };
 }
+
