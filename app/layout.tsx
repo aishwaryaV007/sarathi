@@ -1,5 +1,5 @@
-"use client";
-
+import { cookies } from "next/headers";
+import { type Locale, LOCALE_LABELS } from "@/lib/i18n/context";
 import "./globals.css";
 import { Public_Sans, Source_Serif_4 } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -11,14 +11,18 @@ const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sa
 const sourceSerif4 = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif-4" });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = cookies();
+  const savedLocale = cookieStore.get("sarathi_locale")?.value as Locale | undefined;
+  const initialLocale = savedLocale && LOCALE_LABELS[savedLocale] ? savedLocale : "en";
+
   return (
-    <html lang="en" className={cn(publicSans.variable, sourceSerif4.variable)}>
+    <html lang={initialLocale} className={cn(publicSans.variable, sourceSerif4.variable)}>
       <head>
         <title>Sarathi — Business Approval Assistant</title>
         <meta name="description" content="Get every approval to start your business — from one place." />
       </head>
       <body>
-        <LanguageProvider>
+        <LanguageProvider initialLocale={initialLocale}>
           <Header />
           {children}
           <Footer />

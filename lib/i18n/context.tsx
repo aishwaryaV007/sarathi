@@ -28,8 +28,8 @@ const LanguageContext = createContext<LanguageContextValue>({
   t: (key) => key,
 });
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+export function LanguageProvider({ children, initialLocale = "en" }: { children: ReactNode, initialLocale?: Locale }) {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   // Load saved locale from localStorage on mount
   useEffect(() => {
@@ -42,6 +42,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
     localStorage.setItem("sarathi_locale", l);
+    // Set cookie so server can read it (valid for 365 days, root path)
+    document.cookie = `sarathi_locale=${l}; path=/; max-age=${365 * 24 * 60 * 60}`;
     // Update the html lang attribute
     document.documentElement.lang = l;
   }, []);
