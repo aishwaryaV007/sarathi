@@ -1,42 +1,47 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, FileText, CheckCircle2, ShieldAlert, Zap } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function GuidePage() {
+  const { t } = useLanguage();
+
   const steps = [
     {
-      title: "1. Business Registration",
+      title: t("guide.step1Title"),
       icon: <FileText className="w-6 h-6 text-sarathi-blue" />,
-      content: "Before applying for any operational licenses, you must register your business entity. This includes getting a PAN, registering as a Proprietorship, Partnership, LLP, or Private Limited Company, and securing Udyam (MSME) registration.",
+      content: t("guide.step1Content"),
     },
     {
-      title: "2. Site & Premises Approvals",
+      title: t("guide.step2Title"),
       icon: <ShieldAlert className="w-6 h-6 text-sarathi-blue" />,
-      content: "Ensure your commercial space is legally compliant. This step involves securing a Trade Licence from the local municipality, Fire Safety NOC, and Shop & Establishment Act registration.",
+      content: t("guide.step2Content"),
     },
     {
-      title: "3. Environmental & Utilities",
+      title: t("guide.step3Title"),
       icon: <Zap className="w-6 h-6 text-sarathi-blue" />,
-      content: "If you are manufacturing or processing goods, you must apply for Consent to Establish (CTE) and Consent to Operate (CTO) from the State Pollution Control Board, along with commercial water and electricity connections.",
+      content: t("guide.step3Content"),
     },
     {
-      title: "4. Sector-Specific Licences",
+      title: t("guide.step4Title"),
       icon: <CheckCircle2 className="w-6 h-6 text-sarathi-blue" />,
-      content: "Depending on your product, apply for specialized approvals like FSSAI (Food), BIS ISI mark (Quality), Drug Licence (Pharma), or Excise (Liquor).",
+      content: t("guide.step4Content"),
     }
   ];
 
   const faqs = [
     {
-      q: "Do I need an agent to file these forms?",
-      a: "No. Sarathi is designed to guide you step-by-step through direct government portals, saving you time and agent fees."
+      q: t("guide.faq1Q"),
+      a: t("guide.faq1A")
     },
     {
-      q: "What is the difference between CTE and CTO?",
-      a: "Consent to Establish (CTE) is required before you start building your facility. Consent to Operate (CTO) is required after construction but before you actually begin production."
+      q: t("guide.faq2Q"),
+      a: t("guide.faq2A")
     },
     {
-      q: "Are my documents secure?",
-      a: "Yes. Documents uploaded to the Sarathi Vault are stored securely and never shared with third parties. They are only used to pre-fill your government applications."
+      q: t("guide.faq3Q"),
+      a: t("guide.faq3A")
     }
   ];
 
@@ -50,16 +55,16 @@ export default function GuidePage() {
             <BookOpen className="w-8 h-8 text-sarathi-blue" />
           </div>
           <h1 className="font-serif font-bold text-[36px] text-sarathi-ink tracking-[-0.2px] mb-4">
-            Compliance Guide
+            {t("guide.title")}
           </h1>
           <p className="text-[18px] text-sarathi-muted max-w-[600px] mx-auto leading-relaxed">
-            A plain-English guide to understanding how business approvals work in India, from day one to launch.
+            {t("guide.desc")}
           </p>
         </div>
 
         {/* Timeline Steps */}
         <div className="space-y-6 mb-16">
-          <h2 className="font-bold text-[22px] text-sarathi-ink mb-6">The 4 Phases of Compliance</h2>
+          <h2 className="font-bold text-[22px] text-sarathi-ink mb-6">{t("guide.phasesTitle")}</h2>
           
           <div className="relative border-l-2 border-sarathi-line-strong pl-8 ml-4 space-y-10">
             {steps.map((step, index) => (
@@ -82,7 +87,7 @@ export default function GuidePage() {
 
         {/* FAQs */}
         <div>
-          <h2 className="font-bold text-[22px] text-sarathi-ink mb-6 pt-8 border-t border-sarathi-line">Frequently Asked Questions</h2>
+          <h2 className="font-bold text-[22px] text-sarathi-ink mb-6 pt-8 border-t border-sarathi-line">{t("guide.faqTitle")}</h2>
           <div className="space-y-4">
             {faqs.map((faq, index) => (
               <div key={index} className="border border-sarathi-line rounded-[12px] p-6 bg-[#fafbfc]">

@@ -3,24 +3,22 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  BadgeIndianRupee,
-  Briefcase,
   Landmark,
   ExternalLink,
   Filter,
-  CheckCircle2,
   Sparkles,
-  Info,
 } from "lucide-react";
 import Link from "next/link";
 import schemesData from "@/data/schemes/schemes.json";
 import { evaluateSchemes, classifyMsme, normalizeProfile } from "@/lib/rules-engine";
-import type { BusinessProfile, SchemeMatch } from "@/lib/types";
+import type { BusinessProfile } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function SchemesPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [selectedSector, setSelectedSector] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
+  const { t } = useLanguage();
 
   useEffect(() => {
     try {
@@ -57,19 +55,19 @@ export default function SchemesPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-blue bg-sarathi-blue-050 border border-sarathi-blue-100 px-3 py-1 rounded-full mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              Dynamic Government Subsidy & Credit Discovery
+              {t("schemes.badge")}
             </div>
             <h1 className="font-serif font-bold text-[34px] text-sarathi-ink tracking-[-0.2px] mb-2">
-              Government Schemes & Subsidies
+              {t("schemes.title")}
             </h1>
             <p className="text-[16px] text-sarathi-muted max-w-[650px]">
-              Discover capital subsidies, collateral-free credit guarantees, and interest subvention tailored to your business sector, state, and investment scale.
+              {t("schemes.desc")}
             </p>
           </div>
 
           {profile && (
             <div className="bg-white border border-sarathi-line rounded-[10px] p-3.5 text-[13px] shadow-sm">
-              <div className="text-sarathi-muted text-[11.5px] mb-0.5">Active Profile</div>
+              <div className="text-sarathi-muted text-[11.5px] mb-0.5">{t("schemes.activeProfile")}</div>
               <div className="font-bold text-sarathi-ink">{profile.businessLabel}</div>
               <div className="text-[12px] text-sarathi-blue font-semibold">
                 {msmeTier} MSME · {profile.city || "Local"}, {profile.state}
@@ -82,15 +80,15 @@ export default function SchemesPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-[12px] bg-white border border-sarathi-line mb-8 shadow-sm">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-semibold text-sarathi-muted flex items-center gap-1.5 mr-2">
-              <Filter className="w-3.5 h-3.5" /> Sector Filter:
+              <Filter className="w-3.5 h-3.5" /> {t("schemes.sectorFilter")}
             </span>
             {[
-              { id: "all", label: "All Sectors" },
-              { id: "manufacturing", label: "Manufacturing" },
-              { id: "food", label: "Food & Processing" },
-              { id: "retail_trade", label: "Retail / Trading" },
-              { id: "it_tech", label: "IT / Tech" },
-              { id: "services", label: "Services" },
+              { id: "all", label: t("schemes.allSectors") },
+              { id: "manufacturing", label: t("schemes.manufacturing") },
+              { id: "food", label: t("schemes.foodProcessing") },
+              { id: "retail_trade", label: t("schemes.retail") },
+              { id: "it_tech", label: t("schemes.itTech") },
+              { id: "services", label: t("schemes.services") },
             ].map((f) => (
               <button
                 key={f.id}
@@ -107,13 +105,13 @@ export default function SchemesPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-sarathi-muted">State:</span>
+            <span className="text-[13px] font-semibold text-sarathi-muted">{t("schemes.stateLabel")}</span>
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
               className="text-[13px] border border-sarathi-line-strong rounded-[6px] px-3 py-1.5 bg-white text-sarathi-ink font-medium"
             >
-              <option value="all">All India</option>
+              <option value="all">{t("schemes.allIndia")}</option>
               <option value="telangana">Telangana</option>
               <option value="maharashtra">Maharashtra</option>
             </select>
@@ -136,7 +134,7 @@ export default function SchemesPage() {
                 {isMatched && (
                   <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-[12px] font-bold text-amber-900 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    Recommended for Your Business Profile
+                    {t("schemes.recommended")}
                   </div>
                 )}
 
@@ -160,7 +158,7 @@ export default function SchemesPage() {
                   {/* Match rationale if available */}
                   {matchInfo && (
                     <div className="mb-4 p-2.5 bg-[#fefcf8] border border-amber-200 rounded-[8px] text-[12px] text-amber-900 leading-normal">
-                      <b className="block mb-0.5 text-amber-950 font-bold">Eligibility Match Reason:</b>
+                      <b className="block mb-0.5 text-amber-950 font-bold">{t("schemes.matchReason")}</b>
                       {matchInfo.eligibilityReason}
                     </div>
                   )}
@@ -180,13 +178,13 @@ export default function SchemesPage() {
                   {/* Benefit highlights */}
                   <div className="mt-auto pt-4 border-t border-sarathi-line grid grid-cols-2 gap-3 mb-5">
                     <div>
-                      <div className="text-[11.5px] text-sarathi-muted mb-0.5">Benefit Structure</div>
+                      <div className="text-[11.5px] text-sarathi-muted mb-0.5">{t("schemes.benefitStructure")}</div>
                       <div className="font-bold text-sarathi-ink text-[13.5px] leading-tight">
                         {scheme.subsidy}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[11.5px] text-sarathi-muted mb-0.5">Ceiling Limit</div>
+                      <div className="text-[11.5px] text-sarathi-muted mb-0.5">{t("schemes.ceilingLimit")}</div>
                       <div className="font-bold text-sarathi-ink text-[13.5px] leading-tight">
                         {scheme.maxAmount}
                       </div>
@@ -201,7 +199,7 @@ export default function SchemesPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center w-full gap-2 bg-white border-[1.5px] border-sarathi-line-strong hover:border-sarathi-blue hover:text-sarathi-blue text-sarathi-ink font-semibold px-4 py-2.5 rounded-[8px] text-[13.5px] transition-colors"
                     >
-                      Official Scheme Portal
+                      {t("schemes.portalLink")}
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   ) : (
@@ -209,7 +207,7 @@ export default function SchemesPage() {
                       href="/describe"
                       className="inline-flex items-center justify-center w-full gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold px-4 py-2.5 rounded-[8px] text-[13.5px] transition-colors"
                     >
-                      Check Eligibility for My Unit
+                      {t("schemes.checkEligibility")}
                     </Link>
                   )}
                 </CardContent>

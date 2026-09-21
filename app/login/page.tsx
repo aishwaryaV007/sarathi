@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const { t } = useLanguage();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +22,7 @@ export default function LoginPage() {
     const supabase = createClient();
     if (!supabase) {
       // Demo mode fallback when Supabase is not configured
-      setMessage("Demo mode active — signing you in...");
+      setMessage(t("login.demoMode"));
       setTimeout(() => {
         router.push("/describe");
       }, 700);
@@ -38,7 +40,7 @@ export default function LoginPage() {
       setMessage("Error: " + error.message);
     } else {
       // For demo, immediately push them to describe
-      setMessage("Check your email for the login link! Redirecting...");
+      setMessage(t("login.checkEmail"));
       setTimeout(() => {
          router.push("/describe");
       }, 1500);
@@ -58,26 +60,26 @@ export default function LoginPage() {
                 <path d="M16 24.5l5.2 5.2L33 18" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M24 8.5c5 2.4 9 3 12 3v9c0 8-5.4 13.2-12 16-6.6-2.8-12-8-12-16v-9c3 0 7-.6 12-3z" stroke="#8fb4e0" strokeWidth="1.6" opacity=".7" />
               </svg>
-              <div className="font-serif font-bold text-[24px] tracking-[-0.2px] text-sarathi-blue leading-none">Sarathi</div>
+              <div className="font-serif font-bold text-[24px] tracking-[-0.2px] text-sarathi-blue leading-none">{t("header.brand")}</div>
             </div>
           </div>
           <CardTitle className="font-serif text-[28px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.3px]">
-            Sign in to Sarathi
+            {t("login.title")}
           </CardTitle>
           <CardDescription className="text-[15.5px] text-sarathi-muted">
-            Your guide through government approvals
+            {t("login.subtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent className="pb-8 px-8">
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <div className="flex flex-col gap-2.5">
               <label htmlFor="email" className="font-semibold text-[14.5px] text-sarathi-ink">
-                Email address
+                {t("login.emailLabel")}
               </label>
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="name@company.com" 
+                placeholder={t("login.emailPlaceholder")} 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -90,7 +92,7 @@ export default function LoginPage() {
               disabled={loading}
               className="inline-flex items-center justify-center bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[16px] h-[48px] w-full rounded-[8px] transition-colors mt-2 disabled:opacity-70"
             >
-              {loading ? "Sending link..." : "Continue with Email"}
+              {loading ? t("login.sending") : t("login.continue")}
             </button>
 
             {message && (
@@ -102,7 +104,7 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-center space-x-2 my-5">
             <div className="h-[1px] bg-sarathi-line flex-1"></div>
-            <span className="text-[13px] font-medium text-sarathi-muted">OR</span>
+            <span className="text-[13px] font-medium text-sarathi-muted">{t("login.or")}</span>
             <div className="h-[1px] bg-sarathi-line flex-1"></div>
           </div>
 
@@ -128,7 +130,7 @@ export default function LoginPage() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               <path d="M1 1h22v22H1z" fill="none"/>
             </svg>
-            Continue with Google
+            {t("login.google")}
           </button>
         </CardContent>
         <CardFooter className="flex flex-col gap-2.5 justify-center pb-8 pt-0 px-8">
@@ -137,10 +139,10 @@ export default function LoginPage() {
             onClick={() => router.push("/describe")}
             className="text-[13.5px] font-semibold text-sarathi-blue hover:underline cursor-pointer"
           >
-            Skip for demo (continue as guest) &rarr;
+            {t("login.skip")}
           </button>
           <p className="text-[13px] text-sarathi-faint text-center">
-            New here? You&apos;ll set up your profile after signing in.
+            {t("login.newHere")}
           </p>
         </CardFooter>
       </Card>

@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { BusinessActivity, LegalStructure, JurisdictionType, Sector } from "@/lib/types";
+import { useLanguage } from "@/lib/i18n/context";
 
 const ACTIVITY_OPTIONS: {
   id: BusinessActivity;
@@ -82,6 +83,7 @@ const ACTIVITY_OPTIONS: {
 export default function DescribePage() {
   const [step, setStep] = useState(1);
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Step 1: Core Profile
   const [activity, setActivity] = useState<BusinessActivity>("food_service");
@@ -151,9 +153,9 @@ export default function DescribePage() {
       <div className="max-w-[760px] mx-auto">
         {/* Breadcrumbs */}
         <div className="text-[13.5px] text-sarathi-muted mb-6 flex gap-2 items-center">
-          <Link href="/" className="hover:text-sarathi-blue transition-colors">Home</Link>
+          <Link href="/" className="hover:text-sarathi-blue transition-colors">{t("describe.breadcrumbHome")}</Link>
           <span className="text-sarathi-faint">›</span>
-          <span>New approval journey</span>
+          <span>{t("describe.breadcrumbNew")}</span>
         </div>
 
         <Card className="border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px] overflow-hidden bg-white">
@@ -163,9 +165,9 @@ export default function DescribePage() {
               <span className="w-6 h-6 rounded-full bg-sarathi-blue text-white flex items-center justify-center text-[12px] font-bold">
                 {step}
               </span>
-              Step {step} of 2: {step === 1 ? "Business Constitution & Location" : "Scale & Operational Rules"}
+              Step {step} of 2: {step === 1 ? t("describe.step1Name") : t("describe.step2Name")}
             </div>
-            <span className="text-sarathi-muted">Dynamic Rule Evaluator</span>
+            <span className="text-sarathi-muted">{t("describe.ruleEvaluator")}</span>
           </div>
 
           <CardContent className="p-8 md:p-9">
@@ -173,17 +175,17 @@ export default function DescribePage() {
               <div className="space-y-7">
                 <div>
                   <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                    What type of business are you starting?
+                    {t("describe.step1Title")}
                   </h2>
                   <p className="text-[15px] text-sarathi-muted">
-                    Approvals in India depend on your business activity, legal structure, and jurisdiction.
+                    {t("describe.step1Desc")}
                   </p>
                 </div>
 
                 {/* Activity Grid */}
                 <div className="space-y-2.5">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    1. Primary Business Activity
+                    {t("describe.activityLabel")}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {ACTIVITY_OPTIONS.map((opt) => {
@@ -225,14 +227,14 @@ export default function DescribePage() {
                 {/* Legal Constitution */}
                 <div className="space-y-2">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    2. Legal Constitution / Structure
+                    {t("describe.legalLabel")}
                   </label>
                   <Select
                     value={legalStructure}
                     onValueChange={(v) => setLegalStructure(v as LegalStructure)}
                   >
                     <SelectTrigger className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 focus:border-sarathi-blue transition-all">
-                      <SelectValue placeholder="Select business constitution" />
+                      <SelectValue placeholder={t("describe.legalPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sole_proprietorship">Sole Proprietorship (Individual / Sole Trader)</SelectItem>
@@ -252,7 +254,7 @@ export default function DescribePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="font-semibold text-[13.5px] text-sarathi-ink block">
-                      State
+                      {t("describe.stateLabel")}
                     </label>
                     <Select value={stateName} onValueChange={(v) => setStateName(v || "telangana")}>
                       <SelectTrigger className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]">
@@ -268,7 +270,7 @@ export default function DescribePage() {
 
                   <div className="space-y-1.5">
                     <label className="font-semibold text-[13.5px] text-sarathi-ink block">
-                      City / Area
+                      {t("describe.cityLabel")}
                     </label>
                     <Input
                       placeholder="e.g. Hyderabad, Ghatkesar"
@@ -302,13 +304,13 @@ export default function DescribePage() {
                 {/* Premises Type */}
                 <div className="space-y-2">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    Premises Setup
+                    {t("describe.premisesLabel")}
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
-                      { id: "commercial", label: "Commercial Premises", note: "Office, Retail Shop, Restaurant" },
-                      { id: "industrial", label: "Industrial Factory / Shed", note: "Manufacturing floor or plant" },
-                      { id: "home_office", label: "Home Office / Virtual", note: "Remote digital or consulting" },
+                      { id: "commercial", label: t("describe.premCommercial"), note: t("describe.premCommercialNote") },
+                      { id: "industrial", label: t("describe.premIndustrial"), note: t("describe.premIndustrialNote") },
+                      { id: "home_office", label: t("describe.premHome"), note: t("describe.premHomeNote") },
                     ].map((p) => (
                       <div
                         key={p.id}
@@ -329,7 +331,7 @@ export default function DescribePage() {
                 {/* Business Description */}
                 <div className="space-y-1.5">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    Business Summary / Name (Optional)
+                    {t("describe.descLabel")}
                   </label>
                   <Textarea
                     placeholder="e.g. Setting up an automated snacks processing plant with cold storage"
@@ -348,7 +350,7 @@ export default function DescribePage() {
                     }}
                     className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[46px] px-7 rounded-[8px] transition-colors shadow-sm"
                   >
-                    Continue to Specifics &rarr;
+                    {t("describe.continueBtn")}
                   </button>
                 </div>
               </div>
@@ -356,19 +358,19 @@ export default function DescribePage() {
               <div className="space-y-7">
                 <div>
                   <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                    Tailored details for your {ACTIVITY_OPTIONS.find((a) => a.id === activity)?.label}
+                    {t("describe.step2Title")}{ACTIVITY_OPTIONS.find((a) => a.id === activity)?.label}
                   </h2>
                   <p className="text-[15px] text-sarathi-muted">
-                    We adapt the questionnaire based on your business type to ask only what regulatory statutes require.
+                    {t("describe.step2Desc")}
                   </p>
                 </div>
 
                 {/* Scale: Investment, Turnover & Workers */}
                 <div className="p-4 rounded-[10px] bg-slate-50 border border-sarathi-line space-y-4">
                   <div className="font-bold text-[14px] text-sarathi-ink flex items-center justify-between">
-                    <span>Business Scale & Workforce</span>
+                    <span>{t("describe.scaleLabel")}</span>
                     <span className="text-[12.5px] font-semibold text-sarathi-blue bg-sarathi-blue-050 border border-sarathi-blue-100 px-2.5 py-0.5 rounded-full">
-                      Classified: {msmeTier} MSME
+                      {t("describe.classified")}{msmeTier}{t("describe.msme")}
                     </span>
                   </div>
 
@@ -392,7 +394,7 @@ export default function DescribePage() {
 
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        Est. Annual Turnover
+                        {t("describe.turnoverLabel")}
                       </label>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sarathi-blue">₹</span>
@@ -409,7 +411,7 @@ export default function DescribePage() {
 
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        Number of Employees / Workers
+                        {t("describe.workersLabel")}
                       </label>
                       <Input
                         type="number"
@@ -422,9 +424,9 @@ export default function DescribePage() {
                   </div>
 
                   <div className="text-[12px] text-sarathi-muted flex flex-wrap gap-4 pt-1">
-                    <span>• ESI applies at 10+ employees</span>
-                    <span>• EPF applies at 20+ employees</span>
-                    <span>• Factories Act applies at 10+ (with power)</span>
+                    <span>{t("describe.esiNote")}</span>
+                    <span>{t("describe.epfNote")}</span>
+                    <span>{t("describe.factoriesNote")}</span>
                   </div>
                 </div>
 
@@ -432,14 +434,14 @@ export default function DescribePage() {
                 <div className="space-y-5">
                   <div className="font-bold text-[14.5px] text-sarathi-ink border-b border-sarathi-line pb-2 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-sarathi-blue" />
-                    Activity-Specific Compliance Triggers
+                    {t("describe.triggersLabel")}
                   </div>
 
                   {/* Food questions */}
                   {isFoodRelated && (
                     <div className="space-y-3 p-4 rounded-[10px] bg-white border border-sarathi-line">
                       <div className="font-semibold text-[14px] text-sarathi-ink">
-                        Will you handle, prepare, package, or sell food items?
+                        {t("describe.foodQ")}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <button
@@ -451,7 +453,7 @@ export default function DescribePage() {
                               : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
                           }`}
                         >
-                          Yes, food items involved (FSSAI)
+                          {t("describe.foodYes")}
                         </button>
                         <button
                           type="button"
@@ -462,7 +464,7 @@ export default function DescribePage() {
                               : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
                           }`}
                         >
-                          No food handling
+                          {t("describe.foodNo")}
                         </button>
                       </div>
 
