@@ -28,6 +28,7 @@ interface CatalogEntry {
   documents: string[];
   icon: string;
   portalUrl: string;
+  sourceUrl?: string;
   stage?: number;
   stageName?: string;
   dependsOn?: string[];
@@ -378,6 +379,7 @@ function hydrateApproval(
     documents: base.documents,
     icon: base.icon,
     portalUrl,
+    sourceUrl: base.sourceUrl,
     reason,
     category,
     stage: base.stage ?? 2,

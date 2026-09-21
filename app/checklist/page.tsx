@@ -178,10 +178,17 @@ export default function ChecklistPage() {
                     </AccordionTrigger>
                     <AccordionContent className="px-5 pb-5 pt-2 border-t border-sarathi-line">
                       <div className="pt-3">
-                        <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-5">
-                          <Shield className="w-3.5 h-3.5" />
-                          Required under {app.statute}
-                        </div>
+                        {app.sourceUrl ? (
+                          <a href={app.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-5 hover:bg-green-100 transition-colors">
+                            <Shield className="w-3.5 h-3.5" />
+                            Required under {app.statute} <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+                          </a>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-3 py-1 rounded-full mb-5">
+                            <Shield className="w-3.5 h-3.5" />
+                            Required under {app.statute}
+                          </div>
+                        )}
                         
                         {app.reason && (
                           <div className="text-[13.5px] text-sarathi-muted mb-4 leading-relaxed italic">

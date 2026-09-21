@@ -35,6 +35,7 @@ export interface Approval {
   name: string;
   department: string;
   statute: string;
+  sourceUrl?: string;
   timeline: string;
   documents: string[];
   icon: string;
