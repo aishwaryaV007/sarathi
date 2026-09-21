@@ -3,23 +3,7 @@ import Link from "next/link";
 export function Header() {
   return (
     <>
-      {/* Top Utility Bar */}
-      <div className="bg-sarathi-blue-700 text-[#cfe0f2] text-[12.5px]">
-        <div className="max-w-[1120px] mx-auto px-6 flex justify-between items-center h-[34px]">
-          <span>
-            Government of India · Ease of Doing Business initiative
-          </span>
-          <div className="flex gap-[18px] items-center">
-            <Link href="#" className="text-[#dbe9f7] hover:text-white transition-colors">Screen Reader</Link>
-            <Link href="#" className="text-[#dbe9f7] hover:text-white transition-colors">Help</Link>
-            <div className="flex gap-0.5 items-center" aria-label="language">
-              <button className="text-white bg-white/14 font-semibold px-[6px] py-[2px] rounded md">EN</button>
-              <button className="text-[#a9c4e0] px-[6px] py-[2px] rounded md hover:text-white transition-colors">हिं</button>
-              <button className="text-[#a9c4e0] px-[6px] py-[2px] rounded md hover:text-white transition-colors">తెలుగు</button>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Header */}
       <header className="bg-white border-b border-sarathi-line sticky top-0 z-40">
