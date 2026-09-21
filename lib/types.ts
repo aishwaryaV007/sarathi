@@ -22,6 +22,13 @@ export type BusinessActivity =
   | "construction"
   | "logistics"
   | "healthcare"
+  | "real_estate"
+  | "fintech"
+  | "mining"
+  | "aviation"
+  | "telecom"
+  | "education"
+  | "agriculture"
   | "other";
 
 export type Sector =
@@ -33,6 +40,14 @@ export type Sector =
   | "hospitality"
   | "services"
   | "chemicals"
+  | "real_estate"
+  | "finance"
+  | "logistics_transport"
+  | "mining"
+  | "education"
+  | "agriculture"
+  | "telecom"
+  | "aviation"
   | "other";
 
 export type JurisdictionType =
@@ -79,6 +94,27 @@ export interface BusinessProfile {
   generatesHazardousWaste?: boolean;
   waterEffluentDischarge?: boolean;
   isStartup?: boolean;
+
+  // New sector-specific triggers
+  doesImportExport?: boolean;
+  isRealEstate?: boolean;
+  isFinancialServices?: boolean;
+  isInsurance?: boolean;
+  isCallCenter?: boolean;
+  isTelecomProvider?: boolean;
+  isMining?: boolean;
+  operatesDrones?: boolean;
+  isAviation?: boolean;
+  isClinicalEstablishment?: boolean;
+  handlesExplosives?: boolean;
+  handlesFuel?: boolean;
+  usesPlasticPackaging?: boolean;
+  sellsPackagedGoods?: boolean;
+  ownsCommercialVehicles?: boolean;
+  contractWorkers?: number;
+  isEducationInstitution?: boolean;
+  isDineInRestaurant?: boolean;
+  mandatoryBisProduct?: boolean;
 
   // Backward-compatibility fields
   entityType?: "proprietor" | "partnership" | "company" | "notyet" | string;

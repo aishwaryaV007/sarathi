@@ -265,6 +265,187 @@
       "notApplicableReason": "No commercial borewell groundwater extraction (water sourced through municipal piped supply, tankers, or treated sources).",
       "triggeredBy": ["Commercial or industrial extraction of groundwater via borewell"],
       "missingInfo": ["Hydrogeological report of the borewell", "Digital flow meter installation with telemetry", "Rainwater harvesting and artificial recharge plan"]
+    },
+    "iec_code": {
+      "approvalId": "iec_code",
+      "applicableIf": {
+        "doesImportExport": true
+      },
+      "applicableReason": "Mandatory Import Export Code (IEC) from DGFT under Foreign Trade (Development & Regulation) Act, 1992 for any business engaged in import or export of goods or services.",
+      "notApplicableReason": "Business does not engage in import or export of goods or services.",
+      "triggeredBy": ["Import or export of goods or services across international borders"],
+      "missingInfo": ["Bank account details for foreign exchange transactions"]
+    },
+    "rera": {
+      "approvalId": "rera",
+      "applicableIf": {
+        "isRealEstate": true
+      },
+      "applicableReason": "Mandatory RERA Registration under Real Estate (Regulation and Development) Act, 2016 for any real estate project exceeding 500 sq.m or 8 apartments.",
+      "notApplicableReason": "Business is not involved in real estate development, construction, or property sales.",
+      "triggeredBy": ["Real estate development or construction activity"],
+      "missingInfo": ["Land title clearance certificate", "Approved building plan from municipal authority"]
+    },
+    "nbfc_registration": {
+      "approvalId": "nbfc_registration",
+      "applicableIf": {
+        "isFinancialServices": true
+      },
+      "potentiallyApplicableIf": {
+        "sector": ["finance"]
+      },
+      "applicableReason": "Mandatory NBFC Registration from Reserve Bank of India under RBI Act, 1934 Chapter IIIB for any company engaged in lending, investment, or financial asset acquisition.",
+      "potentiallyApplicableReason": "Finance sector business — verify if activities constitute lending, deposit-taking, or financial intermediation requiring RBI registration.",
+      "notApplicableReason": "Business does not engage in lending, deposit-taking, or financial intermediation regulated by RBI.",
+      "triggeredBy": ["Lending, deposit-taking, or financial intermediation activity"],
+      "missingInfo": ["Net Owned Funds certificate (minimum ₹2 Crore)", "Detailed business plan for RBI scrutiny"]
+    },
+    "osp_licence": {
+      "approvalId": "osp_licence",
+      "applicableIf": {
+        "isCallCenter": true
+      },
+      "potentiallyApplicableIf": {
+        "businessActivity": ["it_services"]
+      },
+      "applicableReason": "DOT Other Service Provider (OSP) Registration required under Indian Telegraph Act, 1885 for call centers, BPOs, and IT-enabled services using telecom resources.",
+      "potentiallyApplicableReason": "IT services business — verify if operations involve telecom resources (EPABX, VoIP, leased circuits) requiring OSP registration.",
+      "notApplicableReason": "Business does not operate call center, BPO, or IT-enabled services using telecom infrastructure.",
+      "triggeredBy": ["Call center, BPO, or ITES operation using telecom resources"],
+      "missingInfo": ["Network architecture diagram", "Telecom resource details (EPABX, VoIP gateway)"]
+    },
+    "peso_licence": {
+      "approvalId": "peso_licence",
+      "applicableIf": {
+        "handlesExplosives": true
+      },
+      "potentiallyApplicableIf": {
+        "handlesFuel": true
+      },
+      "applicableReason": "Mandatory PESO Licence under Explosives Act, 1884 / Petroleum Act, 1934 for storage, handling, or transport of petroleum, compressed gases, or explosive substances.",
+      "potentiallyApplicableReason": "Business handles fuel or petroleum products — verify if storage exceeds the prescribed limits requiring a PESO licence.",
+      "notApplicableReason": "Business does not store, handle, or transport petroleum, compressed gas, or explosive substances.",
+      "triggeredBy": ["Storage or handling of petroleum, gas, or explosives beyond prescribed limits"],
+      "missingInfo": ["Storage capacity details", "Safety distance calculations", "Fire safety equipment inventory"]
+    },
+    "clinical_establishment": {
+      "approvalId": "clinical_establishment",
+      "applicableIf": {
+        "isClinicalEstablishment": true
+      },
+      "potentiallyApplicableIf": {
+        "businessActivity": ["healthcare"]
+      },
+      "applicableReason": "Mandatory Registration under Clinical Establishments (Registration & Regulation) Act, 2010 for hospitals, nursing homes, clinics, diagnostic centres, and pathological labs.",
+      "potentiallyApplicableReason": "Healthcare sector business — verify if the establishment provides clinical services requiring registration.",
+      "notApplicableReason": "Business does not operate a hospital, clinic, diagnostic centre, or any clinical establishment.",
+      "triggeredBy": ["Operation of hospital, clinic, diagnostic lab, or nursing home"],
+      "missingInfo": ["List of medical equipment", "Staff qualification certificates", "Infection control protocols"]
+    },
+    "environmental_clearance": {
+      "approvalId": "environmental_clearance",
+      "applicableIf": {
+        "pollutionCategory": "red",
+        "investmentThresholdCr": 100
+      },
+      "potentiallyApplicableIf": {
+        "pollutionCategory": "orange"
+      },
+      "applicableReason": "Mandatory Environmental Clearance under EIA Notification, 2006 (Environment Protection Act, 1986) for projects listed in Schedule I/II based on investment size and environmental impact.",
+      "potentiallyApplicableReason": "Orange pollution category business — verify if investment or activity falls under EIA Schedule requiring prior environmental clearance from SEIAA/MoEFCC.",
+      "notApplicableReason": "Project does not fall under EIA Notification Schedule categories requiring environmental clearance.",
+      "triggeredBy": ["High-impact industrial or infrastructure project listed under EIA Schedule"],
+      "missingInfo": ["Environmental Impact Assessment (EIA) report", "Public hearing compliance record"]
+    },
+    "hazardous_waste": {
+      "approvalId": "hazardous_waste",
+      "applicableIf": {
+        "generatesHazardousWaste": true
+      },
+      "potentiallyApplicableIf": {
+        "pollutionCategory": "red"
+      },
+      "applicableReason": "Mandatory Hazardous Waste Authorization from State Pollution Control Board under Hazardous and Other Wastes (Management & Transboundary Movement) Rules, 2016.",
+      "potentiallyApplicableReason": "Red category industry — verify if manufacturing process generates hazardous waste listed in HW Rules Schedule I/II.",
+      "notApplicableReason": "Business does not generate, store, or handle any hazardous waste as defined under HW Rules 2016.",
+      "triggeredBy": ["Generation, storage, or handling of hazardous waste"],
+      "missingInfo": ["Waste inventory with HW Schedule category codes", "MoU with authorized TSDF (Treatment, Storage & Disposal Facility)"]
+    },
+    "epr_registration": {
+      "approvalId": "epr_registration",
+      "applicableIf": {
+        "usesPlasticPackaging": true
+      },
+      "potentiallyApplicableIf": {
+        "sellsPackagedGoods": true
+      },
+      "applicableReason": "Mandatory Extended Producer Responsibility (EPR) Registration from CPCB under Plastic Waste Management Rules, 2016 (amended 2022) for producers, importers, and brand owners using plastic packaging.",
+      "potentiallyApplicableReason": "Sells packaged goods — verify if packaging involves plastic materials requiring EPR registration.",
+      "notApplicableReason": "Business does not produce, import, or use plastic packaging materials.",
+      "triggeredBy": ["Use of plastic packaging for products"],
+      "missingInfo": ["Annual plastic consumption data (tonnes)", "Waste management and recycling plan"]
+    },
+    "contract_labour": {
+      "approvalId": "contract_labour",
+      "applicableIf": {
+        "contractWorkersThreshold": 20
+      },
+      "potentiallyApplicableIf": {
+        "contractWorkersRange": [5, 19]
+      },
+      "applicableReason": "Mandatory registration and licence under Contract Labour (Regulation & Abolition) Act, 1970 for principal employers engaging 20 or more contract workers.",
+      "potentiallyApplicableReason": "Engaging fewer than 20 contract workers — some states have lowered the threshold; verify local applicability.",
+      "notApplicableReason": "Business does not engage contract labour or engages fewer than the statutory threshold.",
+      "triggeredBy": ["Engagement of 20 or more contract workers through a contractor"],
+      "missingInfo": ["Contractor licence details", "List of contract workers with wage records"]
+    },
+    "professional_tax": {
+      "approvalId": "professional_tax",
+      "applicableIf": {
+        "hasEmployees": true
+      },
+      "applicableReason": "Mandatory Professional Tax Registration under the applicable State Professional Tax Act for employers paying salaries — applicable in most Indian states (e.g., Telangana, Maharashtra, Karnataka, Gujarat).",
+      "notApplicableReason": "Business has no salaried employees or operates in a state without Professional Tax (e.g., Delhi, Rajasthan).",
+      "triggeredBy": ["Employment of salaried individuals in a state that levies Professional Tax"],
+      "missingInfo": ["Monthly salary register", "State-specific PT slab details"]
+    },
+    "mining_lease": {
+      "approvalId": "mining_lease",
+      "applicableIf": {
+        "isMining": true
+      },
+      "applicableReason": "Mandatory Mining Lease / Licence under Mines and Minerals (Development & Regulation) Act, 1957 (MMDR Act) for any mining or quarrying activity.",
+      "notApplicableReason": "Business does not involve mining, quarrying, or mineral extraction.",
+      "triggeredBy": ["Mining, quarrying, or mineral extraction activity"],
+      "missingInfo": ["Approved mining plan from Indian Bureau of Mines (IBM)", "Environmental and Forest clearances"]
+    },
+    "dgca_approval": {
+      "approvalId": "dgca_approval",
+      "applicableIf": {
+        "operatesDrones": true
+      },
+      "potentiallyApplicableIf": {
+        "isAviation": true
+      },
+      "applicableReason": "Mandatory DGCA Registration and Remote Pilot Licence under Aircraft Act, 1934 and Drone Rules, 2021 for commercial drone operations.",
+      "potentiallyApplicableReason": "Aviation-related business — verify if operations require DGCA approvals for aircraft or drone usage.",
+      "notApplicableReason": "Business does not operate drones, unmanned aircraft, or aviation services.",
+      "triggeredBy": ["Commercial drone operations or aviation services"],
+      "missingInfo": ["Drone UIN (Unique Identification Number)", "Remote pilot licence", "Third-party insurance"]
+    },
+    "vehicle_fitness": {
+      "approvalId": "vehicle_fitness",
+      "applicableIf": {
+        "ownsCommercialVehicles": true
+      },
+      "potentiallyApplicableIf": {
+        "businessActivity": ["logistics"]
+      },
+      "applicableReason": "Mandatory Commercial Vehicle Fitness Certificate and Route Permit under Motor Vehicles Act, 1988 for all commercial goods and passenger transport vehicles.",
+      "potentiallyApplicableReason": "Logistics business — verify if operations involve owned or leased commercial vehicles requiring fitness certificates and permits.",
+      "notApplicableReason": "Business does not own or operate commercial transport vehicles.",
+      "triggeredBy": ["Ownership or operation of commercial goods or passenger vehicles"],
+      "missingInfo": ["Vehicle registration certificates (RC)", "Valid PUC and insurance for each vehicle"]
     }
   }
 }
