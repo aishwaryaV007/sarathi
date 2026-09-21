@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { saveProject } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -15,14 +16,12 @@ import {
   Pill,
   Cog,
   Building2,
-  CheckCircle2,
-  HelpCircle,
   Sparkles,
 } from "lucide-react";
 import type { BusinessActivity, LegalStructure, JurisdictionType, Sector } from "@/lib/types";
-import { useLanguage } from "@/lib/i18n/context";
+import { classifyMsme } from "@/lib/rules-engine";
 
-const ACTIVITY_OPTIONS: {
+export const ACTIVITY_OPTIONS: {
   id: BusinessActivity;
   label: string;
   desc: string;
@@ -80,67 +79,329 @@ const ACTIVITY_OPTIONS: {
   },
 ];
 
+export const JURISDICTION_OPTIONS_BY_STATE: Record<string, { value: JurisdictionType; label: string }[]> = {
+  telangana: [
+    { value: "ghmc", label: "Greater Hyderabad Municipal Corporation (GHMC)" },
+    { value: "municipality", label: "Urban Municipality (CDMA)" },
+    { value: "panchayat", label: "Rural Gram Panchayat" },
+    { value: "industrial_area", label: "Industrial Area (TSIIC)" },
+  ],
+  maharashtra: [
+    { value: "ghmc", label: "Municipal Corporation (BMC / MCGM / PMC)" },
+    { value: "municipality", label: "Urban Municipality / Municipal Council" },
+    { value: "panchayat", label: "Rural Gram Panchayat" },
+    { value: "industrial_area", label: "Industrial Area (MIDC)" },
+  ],
+  other: [
+    { value: "municipality", label: "Municipal Corporation / Urban Local Body (ULB)" },
+    { value: "panchayat", label: "Rural Gram Panchayat" },
+    { value: "industrial_area", label: "Industrial Development Area (SIDC)" },
+  ],
+};
+
+/**
+ * Question applicability rules configuration:
+ * - Excise (Alcohol): Only relevant for Restaurant/Cafe (bar, permit room) and Retail (liquor retail).
+ * - DPIIT Startup India: Excludes Sole Proprietorship (statutorily requires Pvt Ltd, LLP, or registered Partnership).
+ */
+export const QUESTION_APPLICABILITY = {
+  excise: {
+    businessActivities: ["food_service", "retail"] as BusinessActivity[],
+  },
+  dpiit: {
+    excludedConstitutions: ["sole_proprietorship"] as LegalStructure[],
+  },
+};
+
+export function isExciseQuestionApplicable(activity: BusinessActivity | null): boolean {
+  if (!activity) return false;
+  return QUESTION_APPLICABILITY.excise.businessActivities.includes(activity);
+}
+
+export function isDpiitQuestionApplicable(legalStructure: LegalStructure | ""): boolean {
+  if (!legalStructure) return false;
+  return !QUESTION_APPLICABILITY.dpiit.excludedConstitutions.includes(legalStructure as LegalStructure);
+}
+
+const FIELD_ELEMENT_IDS: Record<string, string> = {
+  activity: "activity-section",
+  legalStructure: "legalStructure-trigger",
+  stateName: "state-trigger",
+  city: "city-input",
+  jurisdictionType: "jurisdiction-trigger",
+  premisesType: "premises-section",
+  investment: "investment-input",
+  turnover: "turnover-input",
+  workers: "workers-input",
+  food: "food-section",
+  dineIn: "dineIn-section",
+  power: "power-section",
+  groundwater: "groundwater-section",
+  effluents: "effluents-section",
+  weighing: "weighing-section",
+  drugs: "drugs-section",
+  alcohol: "alcohol-section",
+  isStartup: "isStartup-section",
+};
+
+export function validateStep1Form(values: {
+  activity: BusinessActivity | null;
+  legalStructure: LegalStructure | "";
+  stateName: string;
+  city: string;
+  jurisdictionType: JurisdictionType | "";
+  premisesType: "commercial" | "industrial" | "home_office" | null;
+}): Record<string, string> {
+  const errs: Record<string, string> = {};
+  if (!values.activity) {
+    errs.activity = "Please select a primary business activity";
+  }
+  if (!values.legalStructure) {
+    errs.legalStructure = "Please select a legal structure";
+  }
+  if (!values.stateName) {
+    errs.stateName = "Please select a state";
+  }
+  if (!values.city || values.city.trim().length === 0) {
+    errs.city = "Enter your city or area";
+  } else if (values.city.trim().length < 2) {
+    errs.city = "City or area must be at least 2 characters";
+  }
+  if (!values.jurisdictionType) {
+    errs.jurisdictionType = "Please select a local authority jurisdiction";
+  }
+  if (!values.premisesType) {
+    errs.premisesType = "Please select a premises setup";
+  }
+  return errs;
+}
+
+export function validateStep2Form(values: {
+  investment: string;
+  turnover: string;
+  workers: string;
+  activity: BusinessActivity | null;
+  legalStructure?: LegalStructure | "";
+  food: "yes" | "no" | null;
+  dineIn: "yes" | "no" | null;
+  power: "yes" | "no" | null;
+  groundwater: "yes" | "no" | null;
+  effluents: "yes" | "no" | null;
+  weighing: "yes" | "no" | null;
+  drugs: "yes" | "no" | null;
+  alcohol: "yes" | "no" | null;
+  isStartup: "yes" | "no" | null;
+}): Record<string, string> {
+  const errs: Record<string, string> = {};
+
+  const isMfg = values.activity === "manufacturing" || values.activity === "food_processing";
+  const isFoodRelated = values.activity === "food_service" || values.activity === "food_processing";
+  const isRetail = values.activity === "retail";
+  const isPharmacy = values.activity === "pharmacy";
+
+  // Numbers validation
+  if (values.investment.trim() === "") {
+    errs.investment = "Enter investment in plant/machinery";
+  } else if (isNaN(Number(values.investment)) || Number(values.investment) < 0) {
+    errs.investment = "Investment must be a valid number (0 or higher)";
+  }
+
+  if (values.turnover.trim() === "") {
+    errs.turnover = "Enter estimated annual turnover";
+  } else if (isNaN(Number(values.turnover)) || Number(values.turnover) < 0) {
+    errs.turnover = "Turnover must be a valid number (0 or higher)";
+  }
+
+  if (values.workers.trim() === "") {
+    errs.workers = "Enter number of employees";
+  } else if (isNaN(Number(values.workers)) || Number(values.workers) < 0 || !Number.isInteger(Number(values.workers))) {
+    errs.workers = "Employees must be a whole number (0 or higher)";
+  }
+
+  // Dynamic compliance questions
+  if (isFoodRelated && values.food === null) {
+    errs.food = "Please answer whether food items are involved";
+  }
+  if (values.activity === "food_service" && values.dineIn === null) {
+    errs.dineIn = "Please answer whether your premises will offer dine-in seating";
+  }
+  if (isMfg) {
+    if (values.power === null) {
+      errs.power = "Please answer whether the factory will use electric power";
+    }
+    if (values.groundwater === null) {
+      errs.groundwater = "Please answer whether groundwater will be extracted";
+    }
+    if (values.effluents === null) {
+      errs.effluents = "Please answer whether manufacturing generates effluents/emissions";
+    }
+  }
+  if (isRetail && values.weighing === null) {
+    errs.weighing = "Please answer whether weighing instruments will be used";
+  }
+  if (isPharmacy && values.drugs === null) {
+    errs.drugs = "Please answer whether pharmaceutical medicines will be stocked";
+  }
+
+  // Conditional Excise & DPIIT questions
+  if (isExciseQuestionApplicable(values.activity) && values.alcohol === null) {
+    errs.alcohol = "Please answer whether alcoholic beverages will be served or sold";
+  }
+  if (isDpiitQuestionApplicable(values.legalStructure || "") && values.isStartup === null) {
+    errs.isStartup = "Please answer whether seeking DPIIT Startup India recognition";
+  }
+
+  return errs;
+}
+
 export default function DescribePage() {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { t } = useLanguage();
 
-  // Step 1: Core Profile
-  const [activity, setActivity] = useState<BusinessActivity>("food_service");
-  const [legalStructure, setLegalStructure] = useState<LegalStructure>("sole_proprietorship");
+  // Step 1: Core Profile (starts empty)
+  const [activity, setActivity] = useState<BusinessActivity | null>(null);
+  const [legalStructure, setLegalStructure] = useState<LegalStructure | "">("");
   const [description, setDescription] = useState("");
   const [city, setCity] = useState("");
-  const [stateName, setStateName] = useState("telangana");
-  const [jurisdictionType, setJurisdictionType] = useState<JurisdictionType>("ghmc");
-  const [premisesType, setPremisesType] = useState<"commercial" | "industrial" | "home_office">("commercial");
+  const [stateName, setStateName] = useState<string>("");
+  const [jurisdictionType, setJurisdictionType] = useState<JurisdictionType | "">("");
+  const [premisesType, setPremisesType] = useState<"commercial" | "industrial" | "home_office" | null>(null);
 
-  // Step 2: Scale & Adaptive Specifics
-  const [investment, setInvestment] = useState("25");
-  const [turnover, setTurnover] = useState("50");
-  const [workers, setWorkers] = useState("5");
+  // Step 2: Scale & Adaptive Specifics (starts empty)
+  const [investment, setInvestment] = useState("");
+  const [turnover, setTurnover] = useState("");
+  const [workers, setWorkers] = useState("");
   const [premisesOwnership, setPremisesOwnership] = useState<"rented" | "owned">("rented");
 
-  // Adaptive flags
-  const [power, setPower] = useState<"yes" | "no">("yes");
-  const [food, setFood] = useState<"yes" | "no">("yes");
-  const [dineIn, setDineIn] = useState<"yes" | "no">("yes");
-  const [groundwater, setGroundwater] = useState<"yes" | "no">("no");
-  const [effluents, setEffluents] = useState<"yes" | "no">("no");
-  const [weighing, setWeighing] = useState<"yes" | "no">("no");
-  const [drugs, setDrugs] = useState<"yes" | "no">("no");
-  const [alcohol, setAlcohol] = useState<"yes" | "no">("no");
-  const [isStartup, setIsStartup] = useState<"yes" | "no">("no");
+  // Adaptive compliance questions (all start null / unanswered)
+  const [power, setPower] = useState<"yes" | "no" | null>(null);
+  const [food, setFood] = useState<"yes" | "no" | null>(null);
+  const [dineIn, setDineIn] = useState<"yes" | "no" | null>(null);
+  const [groundwater, setGroundwater] = useState<"yes" | "no" | null>(null);
+  const [effluents, setEffluents] = useState<"yes" | "no" | null>(null);
+  const [weighing, setWeighing] = useState<"yes" | "no" | null>(null);
+  const [drugs, setDrugs] = useState<"yes" | "no" | null>(null);
+  const [alcohol, setAlcohol] = useState<"yes" | "no" | null>(null);
+  const [isStartup, setIsStartup] = useState<"yes" | "no" | null>(null);
+
+  // Validation state tracking
+  const [step1Submitted, setStep1Submitted] = useState(false);
+  const [step2Submitted, setStep2Submitted] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isMfg = activity === "manufacturing" || activity === "food_processing";
   const isFoodRelated = activity === "food_service" || activity === "food_processing";
   const isRetail = activity === "retail";
   const isPharmacy = activity === "pharmacy";
 
-  // Auto-sync initial state when activity changes
+  const showAlcohol = isExciseQuestionApplicable(activity);
+  const showStartup = isDpiitQuestionApplicable(legalStructure);
+
+  const clearError = (field: string) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const updated = { ...prev };
+      delete updated[field];
+      return updated;
+    });
+  };
+
+  const markTouched = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    if (field === "city") {
+      if (!city || city.trim().length === 0) {
+        setErrors((prev) => ({ ...prev, city: "Enter your city or area" }));
+      } else if (city.trim().length < 2) {
+        setErrors((prev) => ({ ...prev, city: "City or area must be at least 2 characters" }));
+      } else {
+        clearError("city");
+      }
+    } else if (field === "investment") {
+      if (investment.trim() === "") {
+        setErrors((prev) => ({ ...prev, investment: "Enter investment in plant/machinery" }));
+      } else if (isNaN(Number(investment)) || Number(investment) < 0) {
+        setErrors((prev) => ({ ...prev, investment: "Investment must be a valid number (0 or higher)" }));
+      } else {
+        clearError("investment");
+      }
+    } else if (field === "turnover") {
+      if (turnover.trim() === "") {
+        setErrors((prev) => ({ ...prev, turnover: "Enter estimated annual turnover" }));
+      } else if (isNaN(Number(turnover)) || Number(turnover) < 0) {
+        setErrors((prev) => ({ ...prev, turnover: "Turnover must be a valid number (0 or higher)" }));
+      } else {
+        clearError("turnover");
+      }
+    } else if (field === "workers") {
+      if (workers.trim() === "") {
+        setErrors((prev) => ({ ...prev, workers: "Enter number of employees" }));
+      } else if (isNaN(Number(workers)) || Number(workers) < 0 || !Number.isInteger(Number(workers))) {
+        setErrors((prev) => ({ ...prev, workers: "Employees must be a whole number (0 or higher)" }));
+      } else {
+        clearError("workers");
+      }
+    }
+  };
+
+  const hasError = (field: string): boolean => {
+    if (!errors[field]) return false;
+    if (step === 1) {
+      return step1Submitted || !!touched[field];
+    }
+    if (step === 2) {
+      return step2Submitted || !!touched[field];
+    }
+    return false;
+  };
+
+  // When activity changes, clear dynamic questions from previous type
   const handleActivitySelect = (act: BusinessActivity) => {
     setActivity(act);
-    if (act === "food_service" || act === "food_processing") {
-      setFood("yes");
-    } else {
-      setFood("no");
+    clearError("activity");
+
+    setFood(null);
+    setDineIn(null);
+    setPower(null);
+    setGroundwater(null);
+    setEffluents(null);
+    setWeighing(null);
+    setDrugs(null);
+
+    // If new activity is not eligible for excise question, clear alcohol answer
+    if (!isExciseQuestionApplicable(act)) {
+      setAlcohol(null);
     }
-    if (act === "pharmacy") {
-      setDrugs("yes");
-    } else {
-      setDrugs("no");
-    }
-    if (act === "manufacturing" || act === "food_processing") {
-      setPremisesType("industrial");
-      setPower("yes");
-    } else if (act === "it_services") {
-      setPremisesType("home_office");
-      setPower("no");
-    } else {
-      setPremisesType("commercial");
-      setPower("no");
-    }
-    if (act === "retail") {
-      setWeighing("yes");
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.activity;
+      delete next.food;
+      delete next.dineIn;
+      delete next.power;
+      delete next.groundwater;
+      delete next.effluents;
+      delete next.weighing;
+      delete next.drugs;
+      if (!isExciseQuestionApplicable(act)) {
+        delete next.alcohol;
+      }
+      return next;
+    });
+  };
+
+  const handleLegalStructureChange = (v: LegalStructure) => {
+    setLegalStructure(v);
+    clearError("legalStructure");
+    // If new constitution is not eligible for DPIIT question, clear isStartup answer
+    if (!isDpiitQuestionApplicable(v)) {
+      setIsStartup(null);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.isStartup;
+        return next;
+      });
     }
   };
 
@@ -329,15 +590,14 @@ export default function DescribePage() {
   const workersNum = Number(workers);
   const hasValidWorkers = workers.trim() !== "" && !isNaN(workersNum) && workersNum >= 0 && Number.isInteger(workersNum);
 
-
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
       <div className="max-w-[760px] mx-auto">
         {/* Breadcrumbs */}
         <div className="text-[13.5px] text-sarathi-muted mb-6 flex gap-2 items-center">
-          <Link href="/" className="hover:text-sarathi-blue transition-colors">{t("describe.breadcrumbHome")}</Link>
+          <Link href="/" className="hover:text-sarathi-blue transition-colors">Home</Link>
           <span className="text-sarathi-faint">›</span>
-          <span>{t("describe.breadcrumbNew")}</span>
+          <span>New approval journey</span>
         </div>
 
         <Card className="border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px] overflow-hidden bg-white">
@@ -347,9 +607,9 @@ export default function DescribePage() {
               <span className="w-6 h-6 rounded-full bg-sarathi-blue text-white flex items-center justify-center text-[12px] font-bold">
                 {step}
               </span>
-              Step {step} of 2: {step === 1 ? t("describe.step1Name") : t("describe.step2Name")}
+              Step {step} of 2: {step === 1 ? "Business Constitution & Location" : "Scale & Operational Rules"}
             </div>
-            <span className="text-sarathi-muted">{t("describe.ruleEvaluator")}</span>
+            <span className="text-sarathi-muted">Dynamic Rule Evaluator</span>
           </div>
 
           <CardContent className="p-8 md:p-9">
@@ -357,27 +617,38 @@ export default function DescribePage() {
               <div className="space-y-7">
                 <div>
                   <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                    {t("describe.step1Title")}
+                    What type of business are you starting?
                   </h2>
                   <p className="text-[15px] text-sarathi-muted">
-                    {t("describe.step1Desc")}
+                    Approvals in India depend on your business activity, legal structure, and jurisdiction.
                   </p>
                 </div>
 
-                {/* Activity Grid */}
-                <div className="space-y-2.5">
+                {/* 1. Activity Grid */}
+                <div id="activity-section" tabIndex={-1} className="outline-none space-y-2.5">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    {t("describe.activityLabel")}
+                    1. Primary Business Activity <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    role="radiogroup"
+                    aria-required="true"
+                    aria-invalid={hasError("activity")}
+                    aria-describedby={hasError("activity") ? "activity-error" : undefined}
+                    className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-1 rounded-[12px] transition-all ${
+                      hasError("activity") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/20" : ""
+                    }`}
+                  >
                     {ACTIVITY_OPTIONS.map((opt) => {
                       const Icon = opt.icon;
                       const isSelected = activity === opt.id;
                       return (
-                        <div
+                        <button
                           key={opt.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
                           onClick={() => handleActivitySelect(opt.id)}
-                          className={`p-3.5 rounded-[10px] border-[1.5px] cursor-pointer transition-all flex items-start gap-3 ${
+                          className={`p-3.5 rounded-[10px] border-[1.5px] cursor-pointer transition-all flex items-start gap-3 text-left ${
                             isSelected
                               ? "border-sarathi-blue bg-sarathi-blue-050 shadow-[0_0_0_2px_var(--color-sarathi-blue-050)]"
                               : "border-sarathi-line hover:border-sarathi-blue-200 hover:bg-slate-50"
@@ -400,23 +671,38 @@ export default function DescribePage() {
                               {opt.desc}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
+                  {hasError("activity") && (
+                    <p id="activity-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                      {errors.activity}
+                    </p>
+                  )}
                 </div>
 
-                {/* Legal Constitution */}
+                {/* 2. Legal Constitution */}
                 <div className="space-y-2">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    {t("describe.legalLabel")}
+                    2. Legal Constitution / Structure <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
                   <Select
-                    value={legalStructure}
-                    onValueChange={(v) => setLegalStructure(v as LegalStructure)}
+                    value={legalStructure || undefined}
+                    onValueChange={(v) => handleLegalStructureChange(v as LegalStructure)}
                   >
-                    <SelectTrigger className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 focus:border-sarathi-blue transition-all">
-                      <SelectValue placeholder={t("describe.legalPlaceholder")} />
+                    <SelectTrigger
+                      id="legalStructure-trigger"
+                      aria-required="true"
+                      aria-invalid={hasError("legalStructure")}
+                      aria-describedby={hasError("legalStructure") ? "legalStructure-error" : undefined}
+                      className={`h-[46px] border-[1.5px] rounded-[8px] bg-white px-3.5 text-[15px] focus:ring-0 transition-all ${
+                        hasError("legalStructure")
+                          ? "border-red-500 focus:border-red-500 ring-1 ring-red-500"
+                          : "border-sarathi-line-strong focus:border-sarathi-blue"
+                      }`}
+                    >
+                      <SelectValue placeholder="Select legal structure" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sole_proprietorship">Sole Proprietorship (Individual / Sole Trader)</SelectItem>
@@ -427,20 +713,40 @@ export default function DescribePage() {
                       <SelectItem value="public_limited">Public Limited Company</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-[12px] text-sarathi-faint">
-                    Determines corporate incorporation (MCA SPICe+), partnership deeds, or individual tax registrations.
-                  </p>
+                  {hasError("legalStructure") ? (
+                    <p id="legalStructure-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                      {errors.legalStructure}
+                    </p>
+                  ) : (
+                    <p className="text-[12px] text-sarathi-faint">
+                      Determines corporate incorporation (MCA SPICe+), partnership deeds, or individual tax registrations.
+                    </p>
+                  )}
                 </div>
 
                 {/* Location & Jurisdiction */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* State */}
                   <div className="space-y-1.5">
                     <label className="font-semibold text-[13.5px] text-sarathi-ink block">
-                      {t("describe.stateLabel")}
+                      State <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
-                    <Select value={stateName} onValueChange={(v) => setStateName(v || "telangana")}>
-                      <SelectTrigger className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]">
-                        <SelectValue />
+                    <Select
+                      value={stateName || undefined}
+                      onValueChange={handleStateChange}
+                    >
+                      <SelectTrigger
+                        id="state-trigger"
+                        aria-required="true"
+                        aria-invalid={hasError("stateName")}
+                        aria-describedby={hasError("stateName") ? "stateName-error" : undefined}
+                        className={`h-[44px] border-[1.5px] rounded-[8px] bg-white px-3.5 text-[14px] ${
+                          hasError("stateName")
+                            ? "border-red-500 ring-1 ring-red-500"
+                            : "border-sarathi-line-strong"
+                        }`}
+                      >
+                        <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="telangana">Telangana</SelectItem>
@@ -448,72 +754,140 @@ export default function DescribePage() {
                         <SelectItem value="other">Other State</SelectItem>
                       </SelectContent>
                     </Select>
+                    {hasError("stateName") && (
+                      <p id="stateName-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                        {errors.stateName}
+                      </p>
+                    )}
                   </div>
 
+                  {/* City / Area */}
                   <div className="space-y-1.5">
                     <label className="font-semibold text-[13.5px] text-sarathi-ink block">
-                      {t("describe.cityLabel")}
+                      City / Area <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Input
+                      id="city-input"
                       placeholder="e.g. Hyderabad, Ghatkesar"
-                      className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]"
+                      aria-required="true"
+                      aria-invalid={hasError("city")}
+                      aria-describedby={hasError("city") ? "city-error" : undefined}
+                      className={`h-[44px] border-[1.5px] rounded-[8px] bg-white px-3.5 text-[14px] ${
+                        hasError("city")
+                          ? "border-red-500 ring-1 ring-red-500 focus:border-red-500"
+                          : "border-sarathi-line-strong"
+                      }`}
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        if (e.target.value.trim().length >= 2) {
+                          clearError("city");
+                        }
+                      }}
+                      onBlur={() => markTouched("city")}
                     />
+                    {hasError("city") && (
+                      <p id="city-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                        {errors.city}
+                      </p>
+                    )}
                   </div>
 
+                  {/* Local Authority Jurisdiction */}
                   <div className="space-y-1.5">
                     <label className="font-semibold text-[13.5px] text-sarathi-ink block">
-                      Local Authority Jurisdiction
+                      Local Authority Jurisdiction <span className="text-red-500" aria-hidden="true">*</span>
                     </label>
                     <Select
-                      value={jurisdictionType}
-                      onValueChange={(v) => setJurisdictionType(v as JurisdictionType)}
+                      value={jurisdictionType || undefined}
+                      disabled={!stateName}
+                      onValueChange={(v) => {
+                        setJurisdictionType((v || "") as JurisdictionType);
+                        clearError("jurisdictionType");
+                      }}
                     >
-                      <SelectTrigger className="h-[44px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[14px]">
-                        <SelectValue />
+                      <SelectTrigger
+                        id="jurisdiction-trigger"
+                        aria-required="true"
+                        aria-invalid={hasError("jurisdictionType")}
+                        aria-describedby={hasError("jurisdictionType") ? "jurisdictionType-error" : undefined}
+                        className={`h-[44px] border-[1.5px] rounded-[8px] bg-white px-3.5 text-[14px] ${
+                          hasError("jurisdictionType")
+                            ? "border-red-500 ring-1 ring-red-500"
+                            : "border-sarathi-line-strong"
+                        }`}
+                      >
+                        <SelectValue placeholder="Select authority" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ghmc">Municipal Corporation (GHMC / BMC)</SelectItem>
-                        <SelectItem value="municipality">Urban Municipality (CDMA)</SelectItem>
-                        <SelectItem value="panchayat">Rural Gram Panchayat</SelectItem>
-                        <SelectItem value="industrial_area">Industrial Area (TSIIC / MIDC)</SelectItem>
+                        {(JURISDICTION_OPTIONS_BY_STATE[stateName] || []).map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {hasError("jurisdictionType") && (
+                      <p id="jurisdictionType-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                        {errors.jurisdictionType}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Premises Type */}
-                <div className="space-y-2">
+                <div id="premises-section" tabIndex={-1} className="outline-none space-y-2">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    {t("describe.premisesLabel")}
+                    Premises Setup <span className="text-red-500" aria-hidden="true">*</span>
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div
+                    role="radiogroup"
+                    aria-required="true"
+                    aria-invalid={hasError("premisesType")}
+                    aria-describedby={hasError("premisesType") ? "premisesType-error" : undefined}
+                    className={`grid grid-cols-1 md:grid-cols-3 gap-3 p-1 rounded-[10px] transition-all ${
+                      hasError("premisesType") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/20" : ""
+                    }`}
+                  >
                     {[
-                      { id: "commercial", label: t("describe.premCommercial"), note: t("describe.premCommercialNote") },
-                      { id: "industrial", label: t("describe.premIndustrial"), note: t("describe.premIndustrialNote") },
-                      { id: "home_office", label: t("describe.premHome"), note: t("describe.premHomeNote") },
-                    ].map((p) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setPremisesType(p.id as any)}
-                        className={`p-3 rounded-[8px] border-[1.5px] cursor-pointer transition-all ${
-                          premisesType === p.id
-                            ? "border-sarathi-blue bg-sarathi-blue-050 font-medium"
-                            : "border-sarathi-line hover:border-sarathi-line-strong"
-                        }`}
-                      >
-                        <div className="text-[14px] font-semibold text-sarathi-ink">{p.label}</div>
-                        <div className="text-[11.5px] text-sarathi-muted mt-0.5">{p.note}</div>
-                      </div>
-                    ))}
+                      { id: "commercial", label: "Commercial Premises", note: "Office, Retail Shop, Restaurant" },
+                      { id: "industrial", label: "Industrial Factory / Shed", note: "Manufacturing floor or plant" },
+                      { id: "home_office", label: "Home Office / Virtual", note: "Remote digital or consulting" },
+                    ].map((p) => {
+                      const isSelected = premisesType === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          onClick={() => {
+                            setPremisesType(p.id as any);
+                            clearError("premisesType");
+                          }}
+                          className={`p-3 rounded-[8px] border-[1.5px] cursor-pointer transition-all text-left ${
+                            isSelected
+                              ? "border-sarathi-blue bg-sarathi-blue-050 font-medium"
+                              : "border-sarathi-line hover:border-sarathi-line-strong"
+                          }`}
+                        >
+                          <div className="text-[14px] font-semibold text-sarathi-ink">{p.label}</div>
+                          <div className="text-[11.5px] text-sarathi-muted mt-0.5">{p.note}</div>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {hasError("premisesType") && (
+                    <p id="premisesType-error" role="alert" className="text-[12.5px] text-red-600 font-medium">
+                      {errors.premisesType}
+                    </p>
+                  )}
                 </div>
 
                 {/* Business Description */}
                 <div className="space-y-1.5">
                   <label className="font-semibold text-[14px] text-sarathi-ink block">
-                    {t("describe.descLabel")}
+                    Business Summary / Name (Optional)
                   </label>
                   <Textarea
                     placeholder="e.g. Setting up an automated snacks processing plant with cold storage"
@@ -526,13 +900,11 @@ export default function DescribePage() {
                 {/* Step 1 Actions */}
                 <div className="pt-4 border-t border-sarathi-line flex justify-end">
                   <button
-                    onClick={() => {
-                      setStep(2);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[46px] px-7 rounded-[8px] transition-colors shadow-sm"
+                    type="button"
+                    onClick={handleStep1Continue}
+                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[46px] px-7 rounded-[8px] transition-colors shadow-sm cursor-pointer"
                   >
-                    {t("describe.continueBtn")}
+                    Continue to Specifics &rarr;
                   </button>
                 </div>
               </div>
@@ -540,145 +912,274 @@ export default function DescribePage() {
               <div className="space-y-7">
                 <div>
                   <h2 className="font-serif text-[26px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.2px]">
-                    {t("describe.step2Title")}{ACTIVITY_OPTIONS.find((a) => a.id === activity)?.label}
+                    Tailored details for your {ACTIVITY_OPTIONS.find((a) => a.id === activity)?.label || "Business"}
                   </h2>
                   <p className="text-[15px] text-sarathi-muted">
-                    {t("describe.step2Desc")}
+                    We adapt the questionnaire based on your business type to ask only what regulatory statutes require.
                   </p>
                 </div>
 
                 {/* Scale: Investment, Turnover & Workers */}
                 <div className="p-4 rounded-[10px] bg-slate-50 border border-sarathi-line space-y-4">
                   <div className="font-bold text-[14px] text-sarathi-ink flex items-center justify-between">
-                    <span>{t("describe.scaleLabel")}</span>
-                    <span className="text-[12.5px] font-semibold text-sarathi-blue bg-sarathi-blue-050 border border-sarathi-blue-100 px-2.5 py-0.5 rounded-full">
-                      {t("describe.classified")}{msmeTier}{t("describe.msme")}
-                    </span>
+                    <span>Business Scale & Workforce</span>
+                    {msmeTier ? (
+                      <span className="text-[12.5px] font-semibold text-sarathi-blue bg-sarathi-blue-050 border border-sarathi-blue-100 px-2.5 py-0.5 rounded-full">
+                        Classified: {msmeTier} MSME
+                      </span>
+                    ) : (
+                      <span className="text-[12.5px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">
+                        Enter values to classify
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Investment */}
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        Investment in Plant/Machinery
+                        Investment in Plant/Machinery <span className="text-red-500" aria-hidden="true">*</span>
                       </label>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sarathi-blue">₹</span>
                         <Input
+                          id="investment-input"
                           type="number"
                           value={investment}
-                          onChange={(e) => setInvestment(e.target.value)}
-                          className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                          onChange={(e) => {
+                            setInvestment(e.target.value);
+                            if (e.target.value.trim() !== "" && !isNaN(Number(e.target.value)) && Number(e.target.value) >= 0) {
+                              clearError("investment");
+                            }
+                          }}
+                          onBlur={() => markTouched("investment")}
+                          aria-required="true"
+                          aria-invalid={hasError("investment")}
+                          aria-describedby={hasError("investment") ? "investment-error" : undefined}
+                          className={`h-[42px] bg-white text-[14px] ${
+                            hasError("investment")
+                              ? "border-red-500 ring-1 ring-red-500 focus:border-red-500"
+                              : "border-sarathi-line-strong"
+                          }`}
                           placeholder="e.g. 25"
                         />
                         <span className="text-[12.5px] text-sarathi-muted font-medium">lakh</span>
                       </div>
+                      {hasError("investment") && (
+                        <p id="investment-error" role="alert" className="text-[12px] text-red-600 font-medium mt-1">
+                          {errors.investment}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Turnover */}
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        {t("describe.turnoverLabel")}
+                        Est. Annual Turnover <span className="text-red-500" aria-hidden="true">*</span>
                       </label>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sarathi-blue">₹</span>
                         <Input
+                          id="turnover-input"
                           type="number"
                           value={turnover}
-                          onChange={(e) => setTurnover(e.target.value)}
-                          className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                          onChange={(e) => {
+                            setTurnover(e.target.value);
+                            if (e.target.value.trim() !== "" && !isNaN(Number(e.target.value)) && Number(e.target.value) >= 0) {
+                              clearError("turnover");
+                            }
+                          }}
+                          onBlur={() => markTouched("turnover")}
+                          aria-required="true"
+                          aria-invalid={hasError("turnover")}
+                          aria-describedby={hasError("turnover") ? "turnover-error" : undefined}
+                          className={`h-[42px] bg-white text-[14px] ${
+                            hasError("turnover")
+                              ? "border-red-500 ring-1 ring-red-500 focus:border-red-500"
+                              : "border-sarathi-line-strong"
+                          }`}
                           placeholder="e.g. 50"
                         />
                         <span className="text-[12.5px] text-sarathi-muted font-medium">lakh</span>
                       </div>
+                      {hasError("turnover") && (
+                        <p id="turnover-error" role="alert" className="text-[12px] text-red-600 font-medium mt-1">
+                          {errors.turnover}
+                        </p>
+                      )}
                     </div>
 
+                    {/* Employees */}
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        {t("describe.workersLabel")}
+                        Number of Employees / Workers <span className="text-red-500" aria-hidden="true">*</span>
                       </label>
                       <Input
+                        id="workers-input"
                         type="number"
                         value={workers}
-                        onChange={(e) => setWorkers(e.target.value)}
-                        className="h-[42px] bg-white border-sarathi-line-strong text-[14px]"
+                        onChange={(e) => {
+                          setWorkers(e.target.value);
+                          if (
+                            e.target.value.trim() !== "" &&
+                            !isNaN(Number(e.target.value)) &&
+                            Number(e.target.value) >= 0 &&
+                            Number.isInteger(Number(e.target.value))
+                          ) {
+                            clearError("workers");
+                          }
+                        }}
+                        onBlur={() => markTouched("workers")}
+                        aria-required="true"
+                        aria-invalid={hasError("workers")}
+                        aria-describedby={hasError("workers") ? "workers-error" : undefined}
+                        className={`h-[42px] bg-white text-[14px] ${
+                          hasError("workers")
+                            ? "border-red-500 ring-1 ring-red-500 focus:border-red-500"
+                            : "border-sarathi-line-strong"
+                        }`}
                         placeholder="e.g. 5"
                       />
+                      {hasError("workers") && (
+                        <p id="workers-error" role="alert" className="text-[12px] text-red-600 font-medium mt-1">
+                          {errors.workers}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div className="text-[12px] text-sarathi-muted flex flex-wrap gap-4 pt-1">
-                    <span>{t("describe.esiNote")}</span>
-                    <span>{t("describe.epfNote")}</span>
-                    <span>{t("describe.factoriesNote")}</span>
-                  </div>
+                  {hasScaleValues && hasValidWorkers ? (
+                    <div className="text-[12px] text-sarathi-muted flex flex-wrap gap-4 pt-1">
+                      <span>• ESI applies at 10+ employees {workersNum >= 10 && <strong className="text-sarathi-blue font-semibold">(Applies)</strong>}</span>
+                      <span>• EPF applies at 20+ employees {workersNum >= 20 && <strong className="text-sarathi-blue font-semibold">(Applies)</strong>}</span>
+                      <span>• Factories Act applies at 10+ (with power) {workersNum >= 10 && power === "yes" && <strong className="text-sarathi-blue font-semibold">(Applies)</strong>}</span>
+                    </div>
+                  ) : (
+                    <div className="text-[12px] text-slate-400 italic pt-1">
+                      Enter investment, turnover, and employee count to calculate MSME category and statutory thresholds (ESI, EPF, Factories Act).
+                    </div>
+                  )}
                 </div>
 
                 {/* Adaptive Activity Questions */}
                 <div className="space-y-5">
                   <div className="font-bold text-[14.5px] text-sarathi-ink border-b border-sarathi-line pb-2 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-sarathi-blue" />
-                    {t("describe.triggersLabel")}
+                    Activity-Specific Compliance Triggers
                   </div>
 
                   {/* Food questions */}
                   {isFoodRelated && (
-                    <div className="space-y-3 p-4 rounded-[10px] bg-white border border-sarathi-line">
-                      <div className="font-semibold text-[14px] text-sarathi-ink">
-                        {t("describe.foodQ")}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setFood("yes")}
-                          className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
-                            food === "yes"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
-                          }`}
+                    <div
+                      id="food-section"
+                      tabIndex={-1}
+                      className={`space-y-4 p-4 rounded-[10px] bg-white border transition-all ${
+                        hasError("food") || (activity === "food_service" && hasError("dineIn"))
+                          ? "border-red-500 ring-1 ring-red-500 bg-red-50/10"
+                          : "border-sarathi-line"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
+                          Will you handle, prepare, package, or sell food items? <span className="text-red-500" aria-hidden="true">*</span>
+                        </div>
+                        <div
+                          role="radiogroup"
+                          aria-required="true"
+                          aria-invalid={hasError("food")}
+                          aria-describedby={hasError("food") ? "food-error" : undefined}
+                          className="grid grid-cols-2 gap-3"
                         >
-                          {t("describe.foodYes")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFood("no")}
-                          className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
-                            food === "no"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
-                          }`}
-                        >
-                          {t("describe.foodNo")}
-                        </button>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={food === "yes"}
+                            onClick={() => {
+                              setFood("yes");
+                              clearError("food");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
+                              food === "yes"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
+                            }`}
+                          >
+                            Yes, food items involved (FSSAI)
+                          </button>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={food === "no"}
+                            onClick={() => {
+                              setFood("no");
+                              clearError("food");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[14px] font-medium transition-all ${
+                              food === "no"
+                                ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
+                            }`}
+                          >
+                            No food handling
+                          </button>
+                        </div>
+                        {hasError("food") && (
+                          <p id="food-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                            {errors.food}
+                          </p>
+                        )}
                       </div>
 
                       {activity === "food_service" && (
-                        <div className="pt-2 border-t border-slate-100">
-                          <div className="font-medium text-[13.5px] text-sarathi-ink mb-2">
-                            Will your premises offer dine-in seating to customers?
+                        <div id="dineIn-section" tabIndex={-1} className="pt-3 border-t border-slate-100">
+                          <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                            Will your premises offer dine-in seating to customers? <span className="text-red-500" aria-hidden="true">*</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("dineIn")}
+                            aria-describedby={hasError("dineIn") ? "dineIn-error" : undefined}
+                            className="grid grid-cols-2 gap-3"
+                          >
                             <button
                               type="button"
-                              onClick={() => setDineIn("yes")}
+                              role="radio"
+                              aria-checked={dineIn === "yes"}
+                              onClick={() => {
+                                setDineIn("yes");
+                                clearError("dineIn");
+                              }}
                               className={`py-2 px-3 rounded-[8px] border text-[13.5px] transition-all ${
                                 dineIn === "yes"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line text-sarathi-ink"
+                                  : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
                               }`}
                             >
                               Yes, Dine-in (Eating House Licence)
                             </button>
                             <button
                               type="button"
-                              onClick={() => setDineIn("no")}
+                              role="radio"
+                              aria-checked={dineIn === "no"}
+                              onClick={() => {
+                                setDineIn("no");
+                                clearError("dineIn");
+                              }}
                               className={`py-2 px-3 rounded-[8px] border text-[13.5px] transition-all ${
                                 dineIn === "no"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line text-sarathi-ink"
+                                  : "border-sarathi-line text-sarathi-ink hover:bg-slate-50"
                               }`}
                             >
                               Takeaway / Cloud Kitchen only
                             </button>
                           </div>
+                          {hasError("dineIn") && (
+                            <p id="dineIn-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.dineIn}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -687,94 +1188,157 @@ export default function DescribePage() {
                   {/* Manufacturing / Industrial questions */}
                   {isMfg && (
                     <div className="space-y-4 p-4 rounded-[10px] bg-white border border-sarathi-line">
-                      <div>
+                      <div id="power-section" tabIndex={-1} className={`p-2 rounded-[8px] ${hasError("power") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/10" : ""}`}>
                         <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
-                          Will the factory use electric power for machinery?
+                          Will the factory use electric power for machinery? <span className="text-red-500" aria-hidden="true">*</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div
+                          role="radiogroup"
+                          aria-required="true"
+                          aria-invalid={hasError("power")}
+                          aria-describedby={hasError("power") ? "power-error" : undefined}
+                          className="grid grid-cols-2 gap-3"
+                        >
                           <button
                             type="button"
-                            onClick={() => setPower("yes")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={power === "yes"}
+                            onClick={() => {
+                              setPower("yes");
+                              clearError("power");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               power === "yes"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             Yes, electric power (Factories Act @ 10+)
                           </button>
                           <button
                             type="button"
-                            onClick={() => setPower("no")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={power === "no"}
+                            onClick={() => {
+                              setPower("no");
+                              clearError("power");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               power === "no"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             No power / Manual (Factories Act @ 20+)
                           </button>
                         </div>
+                        {hasError("power") && (
+                          <p id="power-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                            {errors.power}
+                          </p>
+                        )}
                       </div>
 
-                      <div>
+                      <div id="groundwater-section" tabIndex={-1} className={`p-2 rounded-[8px] ${hasError("groundwater") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/10" : ""}`}>
                         <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
-                          Will you extract groundwater from a borewell on the premises?
+                          Will you extract groundwater from a borewell on the premises? <span className="text-red-500" aria-hidden="true">*</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div
+                          role="radiogroup"
+                          aria-required="true"
+                          aria-invalid={hasError("groundwater")}
+                          aria-describedby={hasError("groundwater") ? "groundwater-error" : undefined}
+                          className="grid grid-cols-2 gap-3"
+                        >
                           <button
                             type="button"
-                            onClick={() => setGroundwater("yes")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={groundwater === "yes"}
+                            onClick={() => {
+                              setGroundwater("yes");
+                              clearError("groundwater");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               groundwater === "yes"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             Yes, borewell (CGWA / State Ground Water NOC)
                           </button>
                           <button
                             type="button"
-                            onClick={() => setGroundwater("no")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={groundwater === "no"}
+                            onClick={() => {
+                              setGroundwater("no");
+                              clearError("groundwater");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               groundwater === "no"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             No, municipal / tanker water only
                           </button>
                         </div>
+                        {hasError("groundwater") && (
+                          <p id="groundwater-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                            {errors.groundwater}
+                          </p>
+                        )}
                       </div>
 
-                      <div>
+                      <div id="effluents-section" tabIndex={-1} className={`p-2 rounded-[8px] ${hasError("effluents") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/10" : ""}`}>
                         <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
-                          Does your manufacturing generate industrial effluents, emissions, or chemicals?
+                          Does your manufacturing generate industrial effluents, emissions, or chemicals? <span className="text-red-500" aria-hidden="true">*</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div
+                          role="radiogroup"
+                          aria-required="true"
+                          aria-invalid={hasError("effluents")}
+                          aria-describedby={hasError("effluents") ? "effluents-error" : undefined}
+                          className="grid grid-cols-2 gap-3"
+                        >
                           <button
                             type="button"
-                            onClick={() => setEffluents("yes")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={effluents === "yes"}
+                            onClick={() => {
+                              setEffluents("yes");
+                              clearError("effluents");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               effluents === "yes"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             Yes (Orange / Red Category PCB Consents)
                           </button>
                           <button
                             type="button"
-                            onClick={() => setEffluents("no")}
-                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                            role="radio"
+                            aria-checked={effluents === "no"}
+                            onClick={() => {
+                              setEffluents("no");
+                              clearError("effluents");
+                            }}
+                            className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                               effluents === "no"
                                 ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                : "border-sarathi-line"
+                                : "border-sarathi-line hover:bg-slate-50"
                             }`}
                           >
                             No significant discharge (Green / White)
                           </button>
                         </div>
+                        {hasError("effluents") && (
+                          <p id="effluents-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                            {errors.effluents}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -783,189 +1347,257 @@ export default function DescribePage() {
                   {(isRetail || isPharmacy) && (
                     <div className="space-y-4 p-4 rounded-[10px] bg-white border border-sarathi-line">
                       {isRetail && (
-                        <div>
+                        <div id="weighing-section" tabIndex={-1} className={`p-2 rounded-[8px] ${hasError("weighing") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/10" : ""}`}>
                           <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
-                            Will you sell goods by weight or measurement, or use weighing instruments?
+                            Will you sell goods by weight or measurement, or use weighing instruments? <span className="text-red-500" aria-hidden="true">*</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("weighing")}
+                            aria-describedby={hasError("weighing") ? "weighing-error" : undefined}
+                            className="grid grid-cols-2 gap-3"
+                          >
                             <button
                               type="button"
-                              onClick={() => setWeighing("yes")}
-                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              role="radio"
+                              aria-checked={weighing === "yes"}
+                              onClick={() => {
+                                setWeighing("yes");
+                                clearError("weighing");
+                              }}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                                 weighing === "yes"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line"
+                                  : "border-sarathi-line hover:bg-slate-50"
                               }`}
                             >
                               Yes (Legal Metrology Stamping)
                             </button>
                             <button
                               type="button"
-                              onClick={() => setWeighing("no")}
-                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              role="radio"
+                              aria-checked={weighing === "no"}
+                              onClick={() => {
+                                setWeighing("no");
+                                clearError("weighing");
+                              }}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                                 weighing === "no"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line"
+                                  : "border-sarathi-line hover:bg-slate-50"
                               }`}
                             >
                               No weighing instruments
                             </button>
                           </div>
+                          {hasError("weighing") && (
+                            <p id="weighing-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.weighing}
+                            </p>
+                          )}
                         </div>
                       )}
 
                       {isPharmacy && (
-                        <div>
+                        <div id="drugs-section" tabIndex={-1} className={`p-2 rounded-[8px] ${hasError("drugs") ? "border border-red-500 ring-1 ring-red-500 bg-red-50/10" : ""}`}>
                           <div className="font-semibold text-[14px] text-sarathi-ink mb-2">
-                            Will you stock, dispense, or distribute pharmaceutical medicines?
+                            Will you stock, dispense, or distribute pharmaceutical medicines? <span className="text-red-500" aria-hidden="true">*</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("drugs")}
+                            aria-describedby={hasError("drugs") ? "drugs-error" : undefined}
+                            className="grid grid-cols-2 gap-3"
+                          >
                             <button
                               type="button"
-                              onClick={() => setDrugs("yes")}
-                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              role="radio"
+                              aria-checked={drugs === "yes"}
+                              onClick={() => {
+                                setDrugs("yes");
+                                clearError("drugs");
+                              }}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                                 drugs === "yes"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line"
+                                  : "border-sarathi-line hover:bg-slate-50"
                               }`}
                             >
                               Yes, pharmaceuticals (Drug Licence Form 20/21)
                             </button>
                             <button
                               type="button"
-                              onClick={() => setDrugs("no")}
-                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium ${
+                              role="radio"
+                              aria-checked={drugs === "no"}
+                              onClick={() => {
+                                setDrugs("no");
+                                clearError("drugs");
+                              }}
+                              className={`py-2 px-3 rounded-[8px] border text-[13.5px] font-medium transition-all ${
                                 drugs === "no"
                                   ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                                  : "border-sarathi-line"
+                                  : "border-sarathi-line hover:bg-slate-50"
                               }`}
                             >
                               Non-drug items only
                             </button>
                           </div>
+                          {hasError("drugs") && (
+                            <p id="drugs-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.drugs}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Special universal questions */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-[10px] bg-white border border-sarathi-line">
-                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
-                        Will you serve or sell alcoholic beverages?
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setAlcohol("yes")}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
-                            alcohol === "yes"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line"
+                  {/* Conditional questions: Alcohol (Excise) & Startup (DPIIT) */}
+                  {(showAlcohol || showStartup) && (
+                    <div className={`grid grid-cols-1 ${showAlcohol && showStartup ? "sm:grid-cols-2" : ""} gap-3`}>
+                      {showAlcohol && (
+                        <div
+                          id="alcohol-section"
+                          tabIndex={-1}
+                          className={`p-3.5 rounded-[10px] bg-white border transition-all ${
+                            hasError("alcohol") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
                           }`}
                         >
-                          Yes (Excise Licence)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAlcohol("no")}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
-                            alcohol === "no"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                    </div>
+                          <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                            Will you serve or sell alcoholic beverages? <span className="text-red-500" aria-hidden="true">*</span>
+                          </div>
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("alcohol")}
+                            aria-describedby={hasError("alcohol") ? "alcohol-error" : undefined}
+                            className="grid grid-cols-2 gap-2"
+                          >
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={alcohol === "yes"}
+                              onClick={() => {
+                                setAlcohol("yes");
+                                clearError("alcohol");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                alcohol === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              Yes (Excise Licence)
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={alcohol === "no"}
+                              onClick={() => {
+                                setAlcohol("no");
+                                clearError("alcohol");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                alcohol === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                          {hasError("alcohol") && (
+                            <p id="alcohol-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.alcohol}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                    <div className="p-3.5 rounded-[10px] bg-white border border-sarathi-line">
-                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
-                        Seeking DPIIT Startup India Recognition?
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsStartup("yes")}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
-                            isStartup === "yes"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line"
+                      {showStartup && (
+                        <div
+                          id="isStartup-section"
+                          tabIndex={-1}
+                          className={`p-3.5 rounded-[10px] bg-white border transition-all ${
+                            hasError("isStartup") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
                           }`}
                         >
-                          Yes (Startup India)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsStartup("no")}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] ${
-                            isStartup === "no"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
+                          <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                            Seeking DPIIT Startup India Recognition? <span className="text-red-500" aria-hidden="true">*</span>
+                          </div>
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("isStartup")}
+                            aria-describedby={hasError("isStartup") ? "isStartup-error" : undefined}
+                            className="grid grid-cols-2 gap-2"
+                          >
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={isStartup === "yes"}
+                              onClick={() => {
+                                setIsStartup("yes");
+                                clearError("isStartup");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                isStartup === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              Yes (Startup India)
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={isStartup === "no"}
+                              onClick={() => {
+                                setIsStartup("no");
+                                clearError("isStartup");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                isStartup === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                          {hasError("isStartup") && (
+                            <p id="isStartup-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.isStartup}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Navigation Buttons */}
                 <div className="pt-5 border-t border-sarathi-line flex justify-between items-center">
                   <button
+                    type="button"
                     onClick={() => {
                       setStep(1);
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
-                    className="text-sarathi-blue hover:text-sarathi-blue-700 font-semibold px-2 py-2 text-[14.5px] transition-colors"
+                    className="text-sarathi-blue hover:text-sarathi-blue-700 font-semibold px-2 py-2 text-[14.5px] transition-colors cursor-pointer"
                   >
                     &larr; Back to Step 1
                   </button>
 
                   <button
-                    onClick={() => {
-                      const selectedActivityDef = ACTIVITY_OPTIONS.find((a) => a.id === activity);
-                      const profile = {
-                        description: description || selectedActivityDef?.label || "Commercial Enterprise",
-                        businessLabel: selectedActivityDef?.label || "Commercial Enterprise",
-                        legalStructure,
-                        businessActivity: activity,
-                        sector: selectedActivityDef?.defaultSector || "services",
-                        state: stateName,
-                        city: city || "Hyderabad",
-                        jurisdictionType,
-                        premisesType,
-                        hasPhysicalPremises: premisesType !== "home_office",
-                        premises: premisesOwnership,
-                        investmentLakh: Number(investment) || 0,
-                        annualTurnoverLakh: Number(turnover) || 0,
-                        workers: Number(workers) || 0,
-                        usesPower: power === "yes",
-                        handlesFood: food === "yes",
-                        servesAlcohol: alcohol === "yes",
-                        handlesDrugs: drugs === "yes",
-                        usesWeighingInstruments: weighing === "yes",
-                        usesGroundwater: groundwater === "yes",
-                        waterEffluentDischarge: effluents === "yes",
-                        isStartup: isStartup === "yes",
-                        // Backward compatibility aliases
-                        entityType:
-                          legalStructure === "private_limited" || legalStructure === "public_limited" || legalStructure === "opc"
-                            ? "company"
-                            : legalStructure === "partnership" || legalStructure === "llp"
-                            ? "partnership"
-                            : "proprietor",
-                        isManufacturing: isMfg,
-                      };
-
-                      sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
-                      router.push("/checklist");
-                    }}
-                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm"
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleSubmit}
+                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 disabled:opacity-70 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm cursor-pointer"
                   >
-                    Generate Dynamic Checklist &rarr;
+                    {isSubmitting ? "Generating..." : "Generate Dynamic Checklist \u2192"}
                   </button>
                 </div>
               </div>
