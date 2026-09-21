@@ -99,6 +99,30 @@ export const JURISDICTION_OPTIONS_BY_STATE: Record<string, { value: Jurisdiction
   ],
 };
 
+/**
+ * Question applicability rules configuration:
+ * - Excise (Alcohol): Only relevant for Restaurant/Cafe (bar, permit room) and Retail (liquor retail).
+ * - DPIIT Startup India: Excludes Sole Proprietorship (statutorily requires Pvt Ltd, LLP, or registered Partnership).
+ */
+export const QUESTION_APPLICABILITY = {
+  excise: {
+    businessActivities: ["food_service", "retail"] as BusinessActivity[],
+  },
+  dpiit: {
+    excludedConstitutions: ["sole_proprietorship"] as LegalStructure[],
+  },
+};
+
+export function isExciseQuestionApplicable(activity: BusinessActivity | null): boolean {
+  if (!activity) return false;
+  return QUESTION_APPLICABILITY.excise.businessActivities.includes(activity);
+}
+
+export function isDpiitQuestionApplicable(legalStructure: LegalStructure | ""): boolean {
+  if (!legalStructure) return false;
+  return !QUESTION_APPLICABILITY.dpiit.excludedConstitutions.includes(legalStructure as LegalStructure);
+}
+
 const FIELD_ELEMENT_IDS: Record<string, string> = {
   activity: "activity-section",
   legalStructure: "legalStructure-trigger",
@@ -157,6 +181,7 @@ export function validateStep2Form(values: {
   turnover: string;
   workers: string;
   activity: BusinessActivity | null;
+  legalStructure?: LegalStructure | "";
   food: "yes" | "no" | null;
   dineIn: "yes" | "no" | null;
   power: "yes" | "no" | null;
@@ -218,11 +243,11 @@ export function validateStep2Form(values: {
     errs.drugs = "Please answer whether pharmaceutical medicines will be stocked";
   }
 
-  // Universal questions
-  if (values.alcohol === null) {
+  // Conditional Excise & DPIIT questions
+  if (isExciseQuestionApplicable(values.activity) && values.alcohol === null) {
     errs.alcohol = "Please answer whether alcoholic beverages will be served or sold";
   }
-  if (values.isStartup === null) {
+  if (isDpiitQuestionApplicable(values.legalStructure || "") && values.isStartup === null) {
     errs.isStartup = "Please answer whether seeking DPIIT Startup India recognition";
   }
 
@@ -270,6 +295,9 @@ export default function DescribePage() {
   const isFoodRelated = activity === "food_service" || activity === "food_processing";
   const isRetail = activity === "retail";
   const isPharmacy = activity === "pharmacy";
+
+  const showAlcohol = isExciseQuestionApplicable(activity);
+  const showStartup = isDpiitQuestionApplicable(legalStructure);
 
   const clearError = (field: string) => {
     setErrors((prev) => {
@@ -341,6 +369,11 @@ export default function DescribePage() {
     setWeighing(null);
     setDrugs(null);
 
+    // If new activity is not eligible for excise question, clear alcohol answer
+    if (!isExciseQuestionApplicable(act)) {
+      setAlcohol(null);
+    }
+
     setErrors((prev) => {
       const next = { ...prev };
       delete next.activity;
@@ -351,8 +384,25 @@ export default function DescribePage() {
       delete next.effluents;
       delete next.weighing;
       delete next.drugs;
+      if (!isExciseQuestionApplicable(act)) {
+        delete next.alcohol;
+      }
       return next;
     });
+  };
+
+  const handleLegalStructureChange = (v: LegalStructure) => {
+    setLegalStructure(v);
+    clearError("legalStructure");
+    // If new constitution is not eligible for DPIIT question, clear isStartup answer
+    if (!isDpiitQuestionApplicable(v)) {
+      setIsStartup(null);
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.isStartup;
+        return next;
+      });
+    }
   };
 
   // Changing State resets City and Local Authority jurisdiction
@@ -399,6 +449,7 @@ export default function DescribePage() {
       turnover,
       workers,
       activity,
+      legalStructure,
       food,
       dineIn,
       power,
@@ -468,8 +519,8 @@ export default function DescribePage() {
         "effluents",
         "weighing",
         "drugs",
-        "alcohol",
-        "isStartup",
+        ...(showAlcohol ? ["alcohol"] : []),
+        ...(showStartup ? ["isStartup"] : []),
       ];
       const firstField = order.find((k) => !!errs[k]);
       if (firstField) {
@@ -497,12 +548,12 @@ export default function DescribePage() {
       workers: Number(workers),
       usesPower: power === "yes",
       handlesFood: food === "yes",
-      servesAlcohol: alcohol === "yes",
+      servesAlcohol: showAlcohol && alcohol === "yes",
       handlesDrugs: drugs === "yes",
       usesWeighingInstruments: weighing === "yes",
       usesGroundwater: groundwater === "yes",
       waterEffluentDischarge: effluents === "yes",
-      isStartup: isStartup === "yes",
+      isStartup: showStartup && isStartup === "yes",
       // Backward compatibility aliases
       entityType:
         legalStructure === "private_limited" || legalStructure === "public_limited" || legalStructure === "opc"
@@ -637,10 +688,7 @@ export default function DescribePage() {
                   </label>
                   <Select
                     value={legalStructure || undefined}
-                    onValueChange={(v) => {
-                      setLegalStructure((v || "") as LegalStructure);
-                      clearError("legalStructure");
-                    }}
+                    onValueChange={(v) => handleLegalStructureChange(v as LegalStructure)}
                   >
                     <SelectTrigger
                       id="legalStructure-trigger"
@@ -1405,122 +1453,128 @@ export default function DescribePage() {
                     </div>
                   )}
 
-                  {/* Universal questions: Alcohol & Startup */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div
-                      id="alcohol-section"
-                      tabIndex={-1}
-                      className={`p-3.5 rounded-[10px] bg-white border transition-all ${
-                        hasError("alcohol") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
-                      }`}
-                    >
-                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
-                        Will you serve or sell alcoholic beverages? <span className="text-red-500" aria-hidden="true">*</span>
-                      </div>
-                      <div
-                        role="radiogroup"
-                        aria-required="true"
-                        aria-invalid={hasError("alcohol")}
-                        aria-describedby={hasError("alcohol") ? "alcohol-error" : undefined}
-                        className="grid grid-cols-2 gap-2"
-                      >
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={alcohol === "yes"}
-                          onClick={() => {
-                            setAlcohol("yes");
-                            clearError("alcohol");
-                          }}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
-                            alcohol === "yes"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line hover:bg-slate-50"
+                  {/* Conditional questions: Alcohol (Excise) & Startup (DPIIT) */}
+                  {(showAlcohol || showStartup) && (
+                    <div className={`grid grid-cols-1 ${showAlcohol && showStartup ? "sm:grid-cols-2" : ""} gap-3`}>
+                      {showAlcohol && (
+                        <div
+                          id="alcohol-section"
+                          tabIndex={-1}
+                          className={`p-3.5 rounded-[10px] bg-white border transition-all ${
+                            hasError("alcohol") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
                           }`}
                         >
-                          Yes (Excise Licence)
-                        </button>
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={alcohol === "no"}
-                          onClick={() => {
-                            setAlcohol("no");
-                            clearError("alcohol");
-                          }}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
-                            alcohol === "no"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line hover:bg-slate-50"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                      {hasError("alcohol") && (
-                        <p id="alcohol-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
-                          {errors.alcohol}
-                        </p>
+                          <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                            Will you serve or sell alcoholic beverages? <span className="text-red-500" aria-hidden="true">*</span>
+                          </div>
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("alcohol")}
+                            aria-describedby={hasError("alcohol") ? "alcohol-error" : undefined}
+                            className="grid grid-cols-2 gap-2"
+                          >
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={alcohol === "yes"}
+                              onClick={() => {
+                                setAlcohol("yes");
+                                clearError("alcohol");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                alcohol === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              Yes (Excise Licence)
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={alcohol === "no"}
+                              onClick={() => {
+                                setAlcohol("no");
+                                clearError("alcohol");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                alcohol === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                          {hasError("alcohol") && (
+                            <p id="alcohol-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.alcohol}
+                            </p>
+                          )}
+                        </div>
                       )}
-                    </div>
 
-                    <div
-                      id="isStartup-section"
-                      tabIndex={-1}
-                      className={`p-3.5 rounded-[10px] bg-white border transition-all ${
-                        hasError("isStartup") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
-                      }`}
-                    >
-                      <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
-                        Seeking DPIIT Startup India Recognition? <span className="text-red-500" aria-hidden="true">*</span>
-                      </div>
-                      <div
-                        role="radiogroup"
-                        aria-required="true"
-                        aria-invalid={hasError("isStartup")}
-                        aria-describedby={hasError("isStartup") ? "isStartup-error" : undefined}
-                        className="grid grid-cols-2 gap-2"
-                      >
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={isStartup === "yes"}
-                          onClick={() => {
-                            setIsStartup("yes");
-                            clearError("isStartup");
-                          }}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
-                            isStartup === "yes"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line hover:bg-slate-50"
+                      {showStartup && (
+                        <div
+                          id="isStartup-section"
+                          tabIndex={-1}
+                          className={`p-3.5 rounded-[10px] bg-white border transition-all ${
+                            hasError("isStartup") ? "border-red-500 ring-1 ring-red-500 bg-red-50/10" : "border-sarathi-line"
                           }`}
                         >
-                          Yes (Startup India)
-                        </button>
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={isStartup === "no"}
-                          onClick={() => {
-                            setIsStartup("no");
-                            clearError("isStartup");
-                          }}
-                          className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
-                            isStartup === "no"
-                              ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
-                              : "border-sarathi-line hover:bg-slate-50"
-                          }`}
-                        >
-                          No
-                        </button>
-                      </div>
-                      {hasError("isStartup") && (
-                        <p id="isStartup-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
-                          {errors.isStartup}
-                        </p>
+                          <div className="font-semibold text-[13.5px] text-sarathi-ink mb-2">
+                            Seeking DPIIT Startup India Recognition? <span className="text-red-500" aria-hidden="true">*</span>
+                          </div>
+                          <div
+                            role="radiogroup"
+                            aria-required="true"
+                            aria-invalid={hasError("isStartup")}
+                            aria-describedby={hasError("isStartup") ? "isStartup-error" : undefined}
+                            className="grid grid-cols-2 gap-2"
+                          >
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={isStartup === "yes"}
+                              onClick={() => {
+                                setIsStartup("yes");
+                                clearError("isStartup");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                isStartup === "yes"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              Yes (Startup India)
+                            </button>
+                            <button
+                              type="button"
+                              role="radio"
+                              aria-checked={isStartup === "no"}
+                              onClick={() => {
+                                setIsStartup("no");
+                                clearError("isStartup");
+                              }}
+                              className={`py-1.5 px-2 rounded-[6px] border text-[13px] font-medium transition-all ${
+                                isStartup === "no"
+                                  ? "bg-sarathi-blue-050 border-sarathi-blue text-sarathi-blue font-bold"
+                                  : "border-sarathi-line hover:bg-slate-50"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                          {hasError("isStartup") && (
+                            <p id="isStartup-error" role="alert" className="text-[12.5px] text-red-600 mt-1 font-medium">
+                              {errors.isStartup}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Navigation Buttons */}

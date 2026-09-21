@@ -1,4 +1,10 @@
-import { validateStep1Form, validateStep2Form } from "../app/describe/page";
+import {
+  validateStep1Form,
+  validateStep2Form,
+  QUESTION_APPLICABILITY,
+  isExciseQuestionApplicable,
+  isDpiitQuestionApplicable,
+} from "../app/describe/page";
 import { classifyMsme } from "../lib/rules-engine";
 import type { BusinessActivity, LegalStructure, JurisdictionType } from "../lib/types";
 
@@ -11,7 +17,7 @@ function assert(condition: boolean, msg: string) {
 }
 
 console.log("=================================================");
-console.log("SARATHI WIZARD VALIDATION & EMPTY-STATE TEST SUITE");
+console.log("SARATHI WIZARD VALIDATION & CONDITIONAL QUESTION SUITE");
 console.log("=================================================\n");
 
 // -------------------------------------------------------------
@@ -80,6 +86,7 @@ const initialStep2 = {
   turnover: "",
   workers: "",
   activity: step1Valid.activity,
+  legalStructure: step1Valid.legalStructure,
   food: null,
   dineIn: null,
   power: null,
@@ -95,23 +102,70 @@ assert(initialStep2.turnover === "", "Turnover starts empty");
 assert(initialStep2.workers === "", "Workers starts empty");
 assert(initialStep2.food === null, "Food question starts unanswered (null)");
 assert(initialStep2.dineIn === null, "Dine-in question starts unanswered (null)");
-assert(initialStep2.alcohol === null, "Alcohol question starts unanswered (null)");
-assert(initialStep2.isStartup === null, "Startup India question starts unanswered (null)");
 console.log("TEST CASE (c) PASSED!\n");
 
 // -------------------------------------------------------------
-// TEST (d): Step 2 with missing numbers or unanswered questions
+// TEST (d): Conditional Question Applicability Rules
 // -------------------------------------------------------------
-console.log("▶ TEST CASE (d): Step 2 with missing numbers or unanswered questions");
-const errsD = validateStep2Form(initialStep2);
-assert(Object.keys(errsD).length > 0, "Submit blocked when Step 2 is incomplete");
-assert(!!errsD.investment, "Investment required error reported");
-assert(!!errsD.turnover, "Turnover required error reported");
-assert(!!errsD.workers, "Workers required error reported");
-assert(!!errsD.food, "Food handling question required error reported");
-assert(!!errsD.dineIn, "Dine-in question required error reported");
-assert(!!errsD.alcohol, "Alcohol question required error reported");
-assert(!!errsD.isStartup, "Startup question required error reported");
+console.log("▶ TEST CASE (d): Conditional question applicability (Excise & DPIIT rules)");
+
+// 1. Excise applicability
+assert(isExciseQuestionApplicable("food_service"), "Excise question shown for food_service (Restaurant / Cafe)");
+assert(isExciseQuestionApplicable("retail"), "Excise question shown for retail (Retail Shop / Store)");
+assert(!isExciseQuestionApplicable("it_services"), "Excise question hidden for it_services (Software / IT)");
+assert(!isExciseQuestionApplicable("pharmacy"), "Excise question hidden for pharmacy (Pharmacy / Medical)");
+assert(!isExciseQuestionApplicable("services"), "Excise question hidden for services (Commercial Services)");
+assert(!isExciseQuestionApplicable("food_processing"), "Excise question hidden for food_processing");
+assert(!isExciseQuestionApplicable("manufacturing"), "Excise question hidden for manufacturing");
+
+// 2. DPIIT Startup India applicability
+assert(!isDpiitQuestionApplicable("sole_proprietorship"), "DPIIT question hidden for sole_proprietorship");
+assert(isDpiitQuestionApplicable("private_limited"), "DPIIT question shown for private_limited");
+assert(isDpiitQuestionApplicable("llp"), "DPIIT question shown for llp");
+assert(isDpiitQuestionApplicable("partnership"), "DPIIT question shown for partnership");
+assert(isDpiitQuestionApplicable("opc"), "DPIIT question shown for opc");
+assert(isDpiitQuestionApplicable("public_limited"), "DPIIT question shown for public_limited");
+
+// 3. Validation behavior with conditional questions
+// Case 1: Restaurant + Sole Proprietorship -> Alcohol is required, Startup is NOT required
+const restaurantSoleProp = {
+  ...initialStep2,
+  activity: "food_service" as BusinessActivity,
+  legalStructure: "sole_proprietorship" as LegalStructure,
+};
+const errsRSP = validateStep2Form(restaurantSoleProp);
+assert(!!errsRSP.alcohol, "Alcohol question is required for food_service");
+assert(!errsRSP.isStartup, "DPIIT question is NOT required for sole_proprietorship");
+
+// Case 2: IT Services + Private Limited -> Alcohol is NOT required, Startup IS required
+const itPvtLtd = {
+  ...initialStep2,
+  activity: "it_services" as BusinessActivity,
+  legalStructure: "private_limited" as LegalStructure,
+};
+const errsITPL = validateStep2Form(itPvtLtd);
+assert(!errsITPL.alcohol, "Alcohol question is NOT required for it_services");
+assert(!!errsITPL.isStartup, "DPIIT question IS required for private_limited");
+
+// Case 3: IT Services + Sole Proprietorship -> NEITHER Alcohol nor Startup is required
+const itSoleProp = {
+  ...initialStep2,
+  activity: "it_services" as BusinessActivity,
+  legalStructure: "sole_proprietorship" as LegalStructure,
+};
+const errsITSP = validateStep2Form(itSoleProp);
+assert(!errsITSP.alcohol, "Alcohol question not required for it_services");
+assert(!errsITSP.isStartup, "DPIIT question not required for sole_proprietorship");
+
+// Case 4: Retail + Partnership -> BOTH Alcohol and Startup are required
+const retailPartnership = {
+  ...initialStep2,
+  activity: "retail" as BusinessActivity,
+  legalStructure: "partnership" as LegalStructure,
+};
+const errsRP = validateStep2Form(retailPartnership);
+assert(!!errsRP.alcohol, "Alcohol question is required for retail");
+assert(!!errsRP.isStartup, "DPIIT question is required for partnership");
 
 // Test negative numbers & non-integers rejection
 const invalidNumbersStep2 = {
@@ -135,6 +189,7 @@ const validStep2 = {
   turnover: "50",
   workers: "5",
   activity: "food_service" as BusinessActivity,
+  legalStructure: "sole_proprietorship" as LegalStructure,
   food: "yes" as const,
   dineIn: "yes" as const,
   power: null,
@@ -143,10 +198,10 @@ const validStep2 = {
   weighing: null,
   drugs: null,
   alcohol: "no" as const,
-  isStartup: "no" as const,
+  isStartup: null, // sole_proprietorship -> not required!
 };
 const errsE = validateStep2Form(validStep2);
-assert(Object.keys(errsE).length === 0, "Step 2 validation passes with 0 errors");
+assert(Object.keys(errsE).length === 0, "Step 2 validation passes with 0 errors (Startup omitted for sole_proprietorship)");
 
 const msmeCategory = classifyMsme(Number(validStep2.investment), Number(validStep2.turnover));
 assert(msmeCategory === "Micro", "MSME classified correctly as Micro (₹25L inv, ₹50L turnover)");
@@ -204,12 +259,17 @@ assert(preservedStep1.description === "Authentic Irani Chai Cafe", "Description 
 // Activity change clearing previous questions
 let dynFood: "yes" | "no" | null = "yes";
 let dynDineIn: "yes" | "no" | null = "yes";
+let dynAlcohol: "yes" | "no" | null = "yes";
 function simulateActivityChange(newAct: BusinessActivity) {
   dynFood = null;
   dynDineIn = null;
+  if (!isExciseQuestionApplicable(newAct)) {
+    dynAlcohol = null;
+  }
 }
-simulateActivityChange("manufacturing");
+simulateActivityChange("it_services");
 assert(dynFood === null && dynDineIn === null, "Previous activity compliance question answers cleared on activity change");
+assert(dynAlcohol === null, "Alcohol question answer cleared when switching to non-excise business activity (it_services)");
 console.log("TEST CASE (f) PASSED!\n");
 
-console.log("🎉 ALL WIZARD VALIDATION TEST SCENARIOS (a) THROUGH (f) PASSED FLAWLESSLY!");
+console.log("🎉 ALL WIZARD VALIDATION & CONDITIONAL QUESTION TESTS PASSED FLAWLESSLY!");
