@@ -18,5 +18,29 @@ export function createClient() {
     } as any;
   }
 
-  return createBrowserClient(url, key);
+  const supabase = createBrowserClient(url, key);
+
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(new RegExp('(^| )demo_mock_email=([^;]+)'));
+    if (match) {
+      const mockEmail = decodeURIComponent(match[2]);
+      const mockUser = { id: "mock-user-1234", email: mockEmail } as any;
+      
+      supabase.auth.getUser = async () => ({ data: { user: mockUser }, error: null });
+      supabase.auth.getSession = async () => ({
+        data: { session: { user: mockUser } as any },
+        error: null
+      });
+      supabase.auth.onAuthStateChange = (callback) => {
+        callback('SIGNED_IN', { user: mockUser } as any);
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      };
+      supabase.auth.signOut = async () => {
+        document.cookie = "demo_mock_email=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        window.location.reload();
+      };
+    }
+  }
+
+  return supabase;
 }

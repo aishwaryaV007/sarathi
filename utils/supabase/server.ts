@@ -34,7 +34,7 @@ export async function createClient() {
     } as any;
   }
 
-  return createServerClient(
+  const supabase = createServerClient(
     url,
     key,
     {
@@ -54,4 +54,17 @@ export async function createClient() {
       },
     }
   );
+
+  // PROTOTYPE MOCK: Override auth behavior if demo cookie is present
+  const mockEmail = cookieStore.get("demo_mock_email")?.value;
+  if (mockEmail) {
+    const mockUser = { id: "mock-user-1234", email: mockEmail } as any;
+    supabase.auth.getUser = async () => ({ data: { user: mockUser }, error: null });
+    supabase.auth.getSession = async () => ({
+      data: { session: { user: mockUser } as any },
+      error: null
+    });
+  }
+
+  return supabase;
 }

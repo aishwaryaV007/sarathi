@@ -215,6 +215,23 @@ export default function SchemesPage() {
             );
           })}
         </div>
+
+        {/* Pro Upsell Banner */}
+        <div className="mt-12 bg-gradient-to-r from-sarathi-blue-050 to-[#eef2f6] border border-sarathi-blue-100 rounded-[14px] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="flex-1">
+            <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sarathi-blue bg-white px-2.5 py-1 rounded-full mb-3 shadow-sm border border-sarathi-blue-100">
+              <Sparkles className="w-3.5 h-3.5" />
+              Sarathi Pro
+            </div>
+            <h3 className="font-bold text-[22px] text-sarathi-ink mb-2">Never miss free capital.</h3>
+            <p className="text-[14.5px] text-sarathi-muted max-w-[600px]">
+              Government schemes open and close constantly. Upgrade to Sarathi Pro to get instant WhatsApp alerts the moment a new subsidy drops for your sector in {selectedState === "all" ? "India" : selectedState}.
+            </p>
+          </div>
+          <Link href="/pricing" className="shrink-0 bg-sarathi-blue text-white font-semibold px-6 py-3 rounded-[8px] hover:bg-blue-700 transition-colors shadow-sm">
+            Upgrade to Pro
+          </Link>
+        </div>
       </div>
     </div>
   );
