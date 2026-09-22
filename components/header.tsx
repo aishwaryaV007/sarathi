@@ -1,10 +1,49 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage, LOCALE_LABELS, type Locale } from "@/lib/i18n/context";
+import { createClient } from "@/lib/db";
 
 export function Header() {
   const { locale, setLocale, t } = useLanguage();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUserEmail(session?.user?.email || null);
+      setLoading(false);
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    if (supabase) {
+      await supabase.auth.signOut();
+      setUserEmail(null);
+      router.refresh();
+    }
+  };
 
   return (
     <>
@@ -48,9 +87,23 @@ export function Header() {
               ))}
             </div>
 
-            <Link href="/login" className="hidden sm:inline-flex items-center justify-center border-[1.5px] border-sarathi-line-strong text-sarathi-blue font-semibold px-[18px] py-[10px] rounded-[8px] hover:border-sarathi-blue hover:bg-sarathi-blue-050 transition-colors">
-              {t("header.login")}
-            </Link>
+            {!loading && userEmail ? (
+              <div className="hidden sm:flex items-center gap-4">
+                <span className="text-[14px] font-medium text-sarathi-ink truncate max-w-[150px]" title={userEmail}>
+                  {userEmail}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-[14px] font-medium text-sarathi-muted hover:text-sarathi-ink transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="hidden sm:inline-flex items-center justify-center border-[1.5px] border-sarathi-line-strong text-sarathi-blue font-semibold px-[18px] py-[10px] rounded-[8px] hover:border-sarathi-blue hover:bg-sarathi-blue-050 transition-colors">
+                {t("header.login")}
+              </Link>
+            )}
           </div>
         </div>
       </header>
