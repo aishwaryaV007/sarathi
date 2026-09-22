@@ -14,11 +14,30 @@ import { evaluateSchemes, classifyMsme, normalizeProfile } from "@/lib/rules-eng
 import type { BusinessProfile } from "@/lib/types";
 import { useLanguage } from "@/lib/i18n/context";
 
+const SCHEME_TRANSLATIONS: Record<string, Record<string, any>> = {
+  hi: {
+    pmegp: { name: "प्रधानमंत्री रोजगार सृजन कार्यक्रम (PMEGP)", dept: "MSME मंत्रालय, भारत सरकार", desc: "नए सूक्ष्म-उद्यमों की स्थापना के माध्यम से रोजगार पैदा करने के लिए क्रेडिट-लिंक्ड सब्सिडी कार्यक्रम।", subsidy: "15% - 35% पूंजीगत सब्सिडी", max: "₹50 लाख (Mfg) / ₹20 लाख (Services)" },
+    cgtmse: { name: "सूक्ष्म और लघु उद्यमों के लिए क्रेडिट गारंटी फंड ट्रस्ट (CGTMSE)", dept: "MSME मंत्रालय और SIDBI", desc: "वाणिज्यिक अनुसूचित बैंकों के माध्यम से नए और मौजूदा सूक्ष्म और लघु उद्यमों के लिए ₹5 करोड़ तक की संपार्श्विक-मुक्त ऋण सुविधा।", subsidy: "संपार्श्विक-मुक्त क्रेडिट गारंटी", max: "₹500 लाख तक" },
+    standup: { name: "स्टैंड-अप इंडिया योजना", dept: "वित्तीय सेवा विभाग, वित्त मंत्रालय", desc: "हर बैंक शाखा में कम से कम एक SC/ST और एक महिला उद्यमी को ₹10 लाख से ₹1 करोड़ के बीच कम्पोजिट बैंक ऋण।", subsidy: "कम्पोजिट बैंक ऋण (टर्म + WC)", max: "₹10 लाख - ₹100 लाख" },
+    tidea: { name: "टी-आइडिया (T-IDEA)", dept: "उद्योग और वाणिज्य विभाग, तेलंगाना सरकार", desc: "तेलंगाना में नए विनिर्माण MSME के लिए राज्य-स्तरीय व्यापक प्रोत्साहन पैकेज।", subsidy: "15% - 35% निवेश सब्सिडी + पावर सब्सिडी", max: "₹30 लाख (सामान्य) / ₹75 लाख (विशेष) तक" },
+    mudra: { name: "प्रधानमंत्री मुद्रा योजना (PMMY)", dept: "वित्तीय सेवा विभाग, भारत सरकार", desc: "गैर-कॉर्पोरेट, गैर-कृषि छोटे व्यवसायों के लिए शिशु, किशोर और तरुण के तहत संपार्श्विक-मुक्त ऋण।", subsidy: "रियायती सूक्ष्म ऋण", max: "₹10 लाख तक" },
+    sisfs: { name: "स्टार्टअप इंडिया सीड फंड योजना (SISFS)", dept: "DPIIT, वाणिज्य और उद्योग मंत्रालय", desc: "DPIIT-मान्यता प्राप्त स्टार्टअप्स को वित्तीय सहायता।", subsidy: "₹20 लाख तक का अनुदान / ₹50 लाख का कर्ज", max: "₹20 लाख (अनुदान) / ₹50 लाख (परिवर्तनीय ऋण)" }
+  },
+  te: {
+    pmegp: { name: "ప్రధాన మంత్రి ఉపాధి కల్పన కార్యక్రమం (PMEGP)", dept: "MSME మంత్రిత్వ శాఖ, భారత ప్రభుత్వం", desc: "కొత్త సూక్ష్మ సంస్థల స్థాపన ద్వారా ఉపాధి కల్పించడానికి క్రెడిట్-లింక్డ్ సబ్సిడీ కార్యక్రమం.", subsidy: "15% - 35% క్యాపిటల్ సబ్సిడీ", max: "₹50 లక్షలు (Mfg) / ₹20 లక్షలు (Services)" },
+    cgtmse: { name: "క్రెడిట్ గ్యారెంటీ ఫండ్ ట్రస్ట్ ఫర్ మైక్రో అండ్ స్మాల్ ఎంటర్‌ప్రైజెస్ (CGTMSE)", dept: "MSME మంత్రిత్వ శాఖ & SIDBI", desc: "వాణిజ్య బ్యాంకుల ద్వారా కొత్త మరియు ప్రస్తుత సూక్ష్మ మరియు చిన్న సంస్థలకు ₹5 కోట్ల వరకు పూచీకత్తు లేని రుణ సదుపాయం.", subsidy: "పూచీకత్తు లేని క్రెడిట్ గ్యారెంటీ", max: "₹500 లక్షల వరకు" },
+    standup: { name: "స్టాండ్-అప్ ఇండియా స్కీమ్", dept: "ఆర్థిక సేవల విభాగం, ఆర్థిక మంత్రిత్వ శాఖ", desc: "గ్రీన్‌ఫీల్డ్ సంస్థలను స్థాపించడానికి ప్రతి బ్యాంకు శాఖకు కనీసం ఒక SC/ST మరియు ఒక మహిళా పారిశ్రామికవేత్తకు ₹10 లక్షల నుండి ₹1 కోటి మధ్య రుణ సౌకర్యం.", subsidy: "కాంపోజిట్ బ్యాంక్ లోన్", max: "₹10 లక్షలు - ₹100 లక్షలు" },
+    tidea: { name: "టి-ఐడియా (T-IDEA)", dept: "పరిశ్రమలు & వాణిజ్య శాఖ, తెలంగాణ ప్రభుత్వం", desc: "తెలంగాణలోని కొత్త తయారీ MSMEల కోసం రాష్ట్ర స్థాయి సమగ్ర ప్రోత్సాహక ప్యాకేజీ.", subsidy: "15% - 35% పెట్టుబడి సబ్సిడీ + విద్యుత్ సబ్సిడీ", max: "₹30 లక్షల వరకు (జనరల్) / ₹75 లక్షలు (స్పెషల్)" },
+    mudra: { name: "ప్రధాన మంత్రి ముద్రా యోజన (PMMY)", dept: "ఆర్థిక సేవల విభాగం, భారత ప్రభుత్వం", desc: "రిటైల్, ట్రేడింగ్ మరియు సేవలలోని చిన్న/సూక్ష్మ వ్యాపారాల కోసం పూచీకత్తు లేని రుణాలు.", subsidy: "రాయితీ మైక్రో-లోన్", max: "₹10 లక్షల వరకు" },
+    sisfs: { name: "స్టార్టప్ ఇండియా సీడ్ ఫండ్ స్కీమ్ (SISFS)", dept: "DPIIT, వాణిజ్యం & పరిశ్రమల మంత్రిత్వ శాఖ", desc: "DPIIT-గుర్తింపు పొందిన స్టార్టప్‌లకు ఆర్థిక సహాయం.", subsidy: "₹20 లక్షల వరకు గ్రాంట్ / ₹50 లక్షల అప్పు", max: "₹20 లక్షలు (గ్రాంట్) / ₹50 లక్షలు (అప్పు)" }
+  }
+};
+
 export default function SchemesPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [selectedSector, setSelectedSector] = useState<string>("all");
   const [selectedState, setSelectedState] = useState<string>("all");
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   useEffect(() => {
     try {
@@ -123,6 +142,13 @@ export default function SchemesPage() {
           {filteredSchemes.map((scheme: any) => {
             const isMatched = matchedIds.has(scheme.id);
             const matchInfo = dynamicMatches.find((m) => m.id === scheme.id);
+            
+            const localized = SCHEME_TRANSLATIONS[locale]?.[scheme.id];
+            const name = localized ? localized.name : scheme.name;
+            const department = localized ? localized.dept : scheme.department;
+            const description = localized ? localized.desc : scheme.description;
+            const subsidy = localized ? localized.subsidy : scheme.subsidy;
+            const maxAmount = localized ? localized.max : scheme.maxAmount;
 
             return (
               <Card
@@ -144,15 +170,15 @@ export default function SchemesPage() {
                   </div>
 
                   <h3 className="font-bold text-[17.5px] text-sarathi-ink mb-1 leading-snug group-hover:text-sarathi-blue transition-colors">
-                    {scheme.name}
+                    {name}
                   </h3>
 
                   <div className="text-[12px] font-semibold text-sarathi-muted mb-3 uppercase tracking-wider">
-                    {scheme.department}
+                    {department}
                   </div>
 
                   <p className="text-[13.5px] text-sarathi-muted mb-4 line-clamp-3 leading-relaxed">
-                    {scheme.description}
+                    {description}
                   </p>
 
                   {/* Match rationale if available */}
@@ -180,13 +206,13 @@ export default function SchemesPage() {
                     <div>
                       <div className="text-[11.5px] text-sarathi-muted mb-0.5">{t("schemes.benefitStructure")}</div>
                       <div className="font-bold text-sarathi-ink text-[13.5px] leading-tight">
-                        {scheme.subsidy}
+                        {subsidy}
                       </div>
                     </div>
                     <div>
                       <div className="text-[11.5px] text-sarathi-muted mb-0.5">{t("schemes.ceilingLimit")}</div>
                       <div className="font-bold text-sarathi-ink text-[13.5px] leading-tight">
-                        {scheme.maxAmount}
+                        {maxAmount}
                       </div>
                     </div>
                   </div>
