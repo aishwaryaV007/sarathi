@@ -293,7 +293,7 @@ export default function DescribePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("sarathi_form_data");
+    const saved = localStorage.getItem("sarathi_form_data");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -332,7 +332,7 @@ export default function DescribePage() {
       investment, turnover, workers, premisesOwnership,
       power, food, dineIn, groundwater, effluents, weighing, drugs, alcohol, isStartup
     };
-    sessionStorage.setItem("sarathi_form_data", JSON.stringify(data));
+    localStorage.setItem("sarathi_form_data", JSON.stringify(data));
   }, [
     isLoaded, step, activity, legalStructure, description, city, stateName, jurisdictionType, premisesType,
     investment, turnover, workers, premisesOwnership,
@@ -613,11 +613,11 @@ export default function DescribePage() {
       isManufacturing: isMfg,
     };
 
-    sessionStorage.setItem("sarathi_profile", JSON.stringify(profile));
+    localStorage.setItem("sarathi_profile", JSON.stringify(profile));
     
     const res = await saveProject(profile);
     if (res.success && res.projectId) {
-      sessionStorage.setItem("sarathi_project_id", res.projectId);
+      localStorage.setItem("sarathi_project_id", res.projectId);
     }
     
     router.push("/checklist");
