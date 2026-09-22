@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, CalendarClock, ArrowRight, HelpCircle, Plus } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 function getStatusStyles(type: string) {
   if (type === "green") return "bg-sarathi-green-050 text-sarathi-green border border-[#bbf7d0]";
@@ -17,8 +19,29 @@ function getProgressColor(type: string) {
   return "bg-sarathi-blue";
 }
 
-export function DashboardClient({ userApplications }: { userApplications: any[] }) {
+export function DashboardClient() {
   const { t } = useLanguage();
+  const [userApplications, setUserApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchApps() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data } = await supabase
+          .from("applications")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("submitted_at", { ascending: false });
+        
+        if (data) setUserApplications(data);
+      }
+      setLoading(false);
+    }
+    fetchApps();
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
@@ -47,7 +70,12 @@ export function DashboardClient({ userApplications }: { userApplications: any[] 
           
           {/* Main List */}
           <div className="space-y-4">
-            {userApplications.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12 bg-white rounded-[12px] border border-sarathi-line shadow-sm">
+                <div className="w-8 h-8 border-4 border-sarathi-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 className="text-lg font-bold text-sarathi-ink">Loading...</h3>
+              </div>
+            ) : userApplications.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-[12px] border border-sarathi-line shadow-sm">
                 <FileText className="w-12 h-12 text-sarathi-line-strong mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-sarathi-ink">{t("dashboard.noApps")}</h3>
