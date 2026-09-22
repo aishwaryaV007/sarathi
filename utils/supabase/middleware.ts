@@ -36,25 +36,8 @@ export async function updateSession(request: NextRequest) {
       }
     );
 
-    // Determine if the route requires authentication
-    const isProtectedRoute = 
-      request.nextUrl.pathname.startsWith("/dashboard") ||
-      request.nextUrl.pathname.startsWith("/apply") ||
-      request.nextUrl.pathname.startsWith("/documents");
-
-    if (isProtectedRoute) {
-      // Only make the slow network call to Supabase on protected routes
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = "/login";
-        redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname);
-        return NextResponse.redirect(redirectUrl);
-      }
-    }
+    // Refresh auth session (keeps cookies alive)
+    await supabase.auth.getUser();
   } catch (err) {
     console.warn("Supabase session update skipped:", err);
   }
