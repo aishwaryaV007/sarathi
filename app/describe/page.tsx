@@ -1595,9 +1595,16 @@ export default function DescribePage() {
                     type="button"
                     disabled={isSubmitting}
                     onClick={handleSubmit}
-                    className="inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 disabled:opacity-70 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm cursor-pointer"
+                    className={`inline-flex items-center justify-center gap-2 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[15px] h-[48px] px-8 rounded-[8px] transition-colors shadow-sm ${isSubmitting ? "opacity-80 cursor-not-allowed" : "cursor-pointer"}`}
                   >
-                    {isSubmitting ? "Generating..." : "Generate Dynamic Checklist \u2192"}
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate Dynamic Checklist \u2192"
+                    )}
                   </button>
                 </div>
               </div>
