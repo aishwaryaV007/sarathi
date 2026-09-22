@@ -255,6 +255,7 @@ export function validateStep2Form(values: {
 }
 
 export default function DescribePage() {
+  const [isLoaded, setIsLoaded] = useState(false);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -290,6 +291,53 @@ export default function DescribePage() {
   const [step2Submitted, setStep2Submitted] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("sarathi_form_data");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.step) setStep(parsed.step);
+        if (parsed.activity) setActivity(parsed.activity);
+        if (parsed.legalStructure) setLegalStructure(parsed.legalStructure);
+        if (parsed.description) setDescription(parsed.description);
+        if (parsed.city) setCity(parsed.city);
+        if (parsed.stateName) setStateName(parsed.stateName);
+        if (parsed.jurisdictionType) setJurisdictionType(parsed.jurisdictionType);
+        if (parsed.premisesType) setPremisesType(parsed.premisesType);
+        if (parsed.investment) setInvestment(parsed.investment);
+        if (parsed.turnover) setTurnover(parsed.turnover);
+        if (parsed.workers) setWorkers(parsed.workers);
+        if (parsed.premisesOwnership) setPremisesOwnership(parsed.premisesOwnership);
+        if (parsed.power) setPower(parsed.power);
+        if (parsed.food) setFood(parsed.food);
+        if (parsed.dineIn) setDineIn(parsed.dineIn);
+        if (parsed.groundwater) setGroundwater(parsed.groundwater);
+        if (parsed.effluents) setEffluents(parsed.effluents);
+        if (parsed.weighing) setWeighing(parsed.weighing);
+        if (parsed.drugs) setDrugs(parsed.drugs);
+        if (parsed.alcohol) setAlcohol(parsed.alcohol);
+        if (parsed.isStartup) setIsStartup(parsed.isStartup);
+      } catch (e) {
+        console.error("Failed to parse saved form data", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const data = {
+      step, activity, legalStructure, description, city, stateName, jurisdictionType, premisesType,
+      investment, turnover, workers, premisesOwnership,
+      power, food, dineIn, groundwater, effluents, weighing, drugs, alcohol, isStartup
+    };
+    sessionStorage.setItem("sarathi_form_data", JSON.stringify(data));
+  }, [
+    isLoaded, step, activity, legalStructure, description, city, stateName, jurisdictionType, premisesType,
+    investment, turnover, workers, premisesOwnership,
+    power, food, dineIn, groundwater, effluents, weighing, drugs, alcohol, isStartup
+  ]);
 
   const isMfg = activity === "manufacturing" || activity === "food_processing";
   const isFoodRelated = activity === "food_service" || activity === "food_processing";
