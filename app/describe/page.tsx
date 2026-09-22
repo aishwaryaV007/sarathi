@@ -206,10 +206,10 @@ export function validateStep2Form(values: {
     errs.investment = "Investment must be a valid number (0 or higher)";
   }
 
-  if (values.turnover.trim() === "") {
-    errs.turnover = "Enter estimated annual turnover";
-  } else if (isNaN(Number(values.turnover)) || Number(values.turnover) < 0) {
-    errs.turnover = "Turnover must be a valid number (0 or higher)";
+  if (values.turnover.trim() !== "") {
+    if (isNaN(Number(values.turnover)) || Number(values.turnover) < 0) {
+      errs.turnover = "Turnover must be a valid number (0 or higher)";
+    }
   }
 
   if (values.workers.trim() === "") {
@@ -1023,7 +1023,7 @@ export default function DescribePage() {
                     {/* Turnover */}
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        Est. Annual Turnover <span className="text-red-500" aria-hidden="true">*</span>
+                        Est. Annual Turnover <span className="font-normal text-sarathi-muted">(Optional)</span>
                       </label>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sarathi-blue">₹</span>
@@ -1038,7 +1038,7 @@ export default function DescribePage() {
                             }
                           }}
                           onBlur={() => markTouched("turnover")}
-                          aria-required="true"
+                          aria-required="false"
                           aria-invalid={hasError("turnover")}
                           aria-describedby={hasError("turnover") ? "turnover-error" : undefined}
                           className={`h-[42px] bg-white text-[14px] ${

@@ -44,6 +44,7 @@ interface CatalogEntry {
   stageName?: string;
   dependsOn?: string[];
   locationDependent?: boolean;
+  submissionType?: "online" | "physical" | "both";
 }
 
 interface SchemeEntry {
@@ -1566,6 +1567,7 @@ function hydrateApproval(
     dependsOn: base.dependsOn ?? [],
     locationDependent: !!base.locationDependent,
     authorityType,
+    submissionType: base.submissionType ?? "online",
   };
 }
 

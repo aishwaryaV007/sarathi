@@ -157,6 +157,7 @@ export interface Approval {
   dependsOn?: string[];
   locationDependent?: boolean;
   authorityType?: "GHMC" | "CDMA" | "Panchayat" | "State" | "Central";
+  submissionType?: "online" | "physical" | "both";
 }
 
 /** Matched Government Scheme or Subsidy. */

@@ -1,20 +1,26 @@
 {
   "_comment": "Sarathi approval catalog. CONTENT only (names, departments, statutes, documents, portal URLs, sourceUrls, sequence stages). The conditional logic that decides WHICH of these apply lives in lib/rules-engine.ts. Location-dependent entries have locationDependent: true and are resolved dynamically at runtime by rules-engine.ts.",
-
   "company_incorporation": {
     "id": "company_incorporation",
     "name": "Company Incorporation (SPICe+)",
     "department": "Ministry of Corporate Affairs (MCA)",
     "statute": "Companies Act, 2013",
     "timeline": "7–15 working days",
-    "documents": ["DIN", "DSC", "MOA & AOA", "Registered office proof", "PAN"],
+    "documents": [
+      "DIN",
+      "DSC",
+      "MOA & AOA",
+      "Registered office proof",
+      "PAN"
+    ],
     "icon": "building",
     "portalUrl": "https://www.mca.gov.in",
     "sourceUrl": "https://www.mca.gov.in/Ministry/pdf/CompaniesAct2013.pdf",
     "stage": 1,
     "stageName": "Entity & Registration",
     "dependsOn": [],
-    "locationDependent": false
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "startup_dpiit": {
     "id": "startup_dpiit",
@@ -22,14 +28,21 @@
     "department": "DPIIT, Ministry of Commerce & Industry",
     "statute": "Startup India Scheme, 2016",
     "timeline": "3–5 working days",
-    "documents": ["Incorporation certificate", "PAN", "Brief write-up"],
+    "documents": [
+      "Incorporation certificate",
+      "PAN",
+      "Brief write-up"
+    ],
     "icon": "badge",
     "portalUrl": "https://www.startupindia.gov.in",
     "sourceUrl": "https://www.startupindia.gov.in/content/sih/en/startup-scheme.html",
     "stage": 1,
     "stageName": "Entity & Registration",
-    "dependsOn": ["company_incorporation"],
-    "locationDependent": false
+    "dependsOn": [
+      "company_incorporation"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "udyam": {
     "id": "udyam",
@@ -37,14 +50,19 @@
     "department": "Ministry of MSME, Government of India",
     "statute": "MSMED Act, 2006 — classification per Notification S.O. 1364(E), 2025",
     "timeline": "Instant (self-declaration)",
-    "documents": ["PAN", "Aadhaar", "Bank account"],
+    "documents": [
+      "PAN",
+      "Aadhaar",
+      "Bank account"
+    ],
     "icon": "badge",
     "portalUrl": "https://udyamregistration.gov.in",
     "sourceUrl": "https://msme.gov.in/sites/default/files/MSMED_Act_2006.pdf",
     "stage": 1,
     "stageName": "Entity & Registration",
     "dependsOn": [],
-    "locationDependent": false
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "gst": {
     "id": "gst",
@@ -52,14 +70,23 @@
     "department": "Central Board of Indirect Taxes & Customs (CBIC)",
     "statute": "CGST Act, 2017 — Section 22",
     "timeline": "3–7 working days",
-    "documents": ["PAN", "Aadhaar", "Premises proof", "Bank account", "Passport photo"],
+    "documents": [
+      "PAN",
+      "Aadhaar",
+      "Premises proof",
+      "Bank account",
+      "Passport photo"
+    ],
     "icon": "rupee",
     "portalUrl": "https://www.gst.gov.in",
     "sourceUrl": "https://cbic-gst.gov.in/pdf/CGST-Act-Updated-upto-30082020.pdf",
     "stage": 1,
     "stageName": "Entity & Registration",
-    "dependsOn": ["udyam"],
-    "locationDependent": false
+    "dependsOn": [
+      "udyam"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "groundwater_noc": {
     "id": "groundwater_noc",
@@ -67,14 +94,21 @@
     "department": "Central Ground Water Authority (CGWA) / State Ground Water Dept",
     "statute": "Environment (Protection) Act, 1986 — CGWA guidelines",
     "timeline": "30 working days",
-    "documents": ["Borewell details", "Land document", "Water use plan"],
+    "documents": [
+      "Borewell details",
+      "Land document",
+      "Water use plan"
+    ],
     "icon": "leaf",
     "portalUrl": "https://cgwa-noc.gov.in",
     "sourceUrl": "https://cgwa-noc.gov.in/landingpage/guidelines.htm",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["gst"],
-    "locationDependent": true
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "cte": {
     "id": "cte",
@@ -82,14 +116,21 @@
     "department": "State Pollution Control Board",
     "statute": "Water Act, 1974 (Sec 25) & Air Act, 1981 (Sec 21)",
     "timeline": "14–21 working days",
-    "documents": ["Project report", "Site plan", "Land document"],
+    "documents": [
+      "Project report",
+      "Site plan",
+      "Land document"
+    ],
     "icon": "leaf",
     "portalUrl": "https://tspcb.cgg.gov.in",
     "sourceUrl": "https://cpcb.nic.in/water-act/",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["gst"],
-    "locationDependent": true
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "factory_licence": {
     "id": "factory_licence",
@@ -97,14 +138,21 @@
     "department": "State Directorate of Factories / DISH",
     "statute": "Factories Act, 1948 — Sec 6 & Sec 12",
     "timeline": "15–30 working days",
-    "documents": ["Building plan", "Machinery layout", "Land document"],
+    "documents": [
+      "Building plan",
+      "Machinery layout",
+      "Land document"
+    ],
     "icon": "building",
     "portalUrl": "https://tsipass.telangana.gov.in",
     "sourceUrl": "https://labour.gov.in/sites/default/files/thefactoriesact1948.pdf",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["cte"],
-    "locationDependent": true
+    "dependsOn": [
+      "cte"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "fire_noc": {
     "id": "fire_noc",
@@ -112,14 +160,20 @@
     "department": "State Disaster Response & Fire Services",
     "statute": "State Fire Service Act",
     "timeline": "7–15 working days",
-    "documents": ["Building plan", "Fire safety layout"],
+    "documents": [
+      "Building plan",
+      "Fire safety layout"
+    ],
     "icon": "shield",
     "portalUrl": "https://fire.telangana.gov.in",
     "sourceUrl": "https://fire.telangana.gov.in/",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["factory_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "factory_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "power_connection": {
     "id": "power_connection",
@@ -127,14 +181,22 @@
     "department": "State Electricity Distribution Company (DISCOM)",
     "statute": "Electricity Act, 2003",
     "timeline": "12–30 working days",
-    "documents": ["Premises proof", "Load requirement", "Wiring certificate", "ID proof"],
+    "documents": [
+      "Premises proof",
+      "Load requirement",
+      "Wiring certificate",
+      "ID proof"
+    ],
     "icon": "zap",
     "portalUrl": "https://www.tssspdcl.com",
     "sourceUrl": "https://powermin.gov.in/en/content/electricity-act-2003",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "trade_licence": {
     "id": "trade_licence",
@@ -142,14 +204,21 @@
     "department": "Local Municipal Body / Gram Panchayat",
     "statute": "State Municipalities Act",
     "timeline": "7–15 working days",
-    "documents": ["Premises proof", "Property tax receipt", "ID proof"],
+    "documents": [
+      "Premises proof",
+      "Property tax receipt",
+      "ID proof"
+    ],
     "icon": "building",
     "portalUrl": "https://www.ghmc.gov.in",
     "sourceUrl": "https://cdma.telangana.gov.in/",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["gst"],
-    "locationDependent": true
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": true,
+    "submissionType": "both"
   },
   "cto": {
     "id": "cto",
@@ -157,14 +226,20 @@
     "department": "State Pollution Control Board",
     "statute": "Water Act, 1974 & Air Act, 1981",
     "timeline": "Before starting operations",
-    "documents": ["CTE approval", "Pollution control setup proof"],
+    "documents": [
+      "CTE approval",
+      "Pollution control setup proof"
+    ],
     "icon": "leaf",
     "portalUrl": "https://tspcb.cgg.gov.in",
     "sourceUrl": "https://cpcb.nic.in/water-act/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["cte"],
-    "locationDependent": true
+    "dependsOn": [
+      "cte"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "fssai": {
     "id": "fssai",
@@ -172,14 +247,22 @@
     "department": "Food Safety & Standards Authority of India (FSSAI)",
     "statute": "Food Safety & Standards Act, 2006",
     "timeline": "7–30 working days",
-    "documents": ["ID proof", "Premises proof", "Water analysis report", "Food safety plan"],
+    "documents": [
+      "ID proof",
+      "Premises proof",
+      "Water analysis report",
+      "Food safety plan"
+    ],
     "icon": "store",
     "portalUrl": "https://foscos.fssai.gov.in",
     "sourceUrl": "https://fssai.gov.in/cms/food-safety-and-standards-act-2006.php",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": false
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "bis_isi": {
     "id": "bis_isi",
@@ -187,14 +270,23 @@
     "department": "Bureau of Indian Standards (BIS)",
     "statute": "BIS Act, 2016 — IS 14543 (packaged drinking water)",
     "timeline": "30–60 working days",
-    "documents": ["Water test report", "Layout plan", "Machinery list", "Lab details"],
+    "documents": [
+      "Water test report",
+      "Layout plan",
+      "Machinery list",
+      "Lab details"
+    ],
     "icon": "badge",
     "portalUrl": "https://www.manakonline.in",
     "sourceUrl": "https://www.bis.gov.in/wp-content/uploads/2020/12/BIS-Act-2016.pdf",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["cto", "fssai"],
-    "locationDependent": false
+    "dependsOn": [
+      "cto",
+      "fssai"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "drug_licence": {
     "id": "drug_licence",
@@ -202,14 +294,22 @@
     "department": "State Drugs Control Administration",
     "statute": "Drugs & Cosmetics Act, 1940",
     "timeline": "30–45 working days",
-    "documents": ["Pharmacist registration", "Premises proof", "Refrigerator proof", "Layout plan"],
+    "documents": [
+      "Pharmacist registration",
+      "Premises proof",
+      "Refrigerator proof",
+      "Layout plan"
+    ],
     "icon": "filecheck",
     "portalUrl": "https://dca.telangana.gov.in",
     "sourceUrl": "https://cdsco.gov.in/opencms/opencms/en/Drugs-and-Cosmetics/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "eating_house": {
     "id": "eating_house",
@@ -217,14 +317,23 @@
     "department": "Local Police Commissionerate / Municipal Body",
     "statute": "State Police Act / Municipal bye-laws",
     "timeline": "15–30 working days",
-    "documents": ["Premises proof", "Fire NOC", "FSSAI licence", "Trade licence"],
+    "documents": [
+      "Premises proof",
+      "Fire NOC",
+      "FSSAI licence",
+      "Trade licence"
+    ],
     "icon": "store",
     "portalUrl": "https://police.telangana.gov.in",
     "sourceUrl": "https://police.telangana.gov.in/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence", "fssai"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence",
+      "fssai"
+    ],
+    "locationDependent": true,
+    "submissionType": "both"
   },
   "excise_licence": {
     "id": "excise_licence",
@@ -232,14 +341,23 @@
     "department": "State Prohibition & Excise Department",
     "statute": "State Excise Act",
     "timeline": "30–60 working days",
-    "documents": ["Premises proof", "ID proof", "NOC from local body", "Eating house licence"],
+    "documents": [
+      "Premises proof",
+      "ID proof",
+      "NOC from local body",
+      "Eating house licence"
+    ],
     "icon": "filecheck",
     "portalUrl": "https://prohibitionexcise.telangana.gov.in",
     "sourceUrl": "https://prohibitionexcise.telangana.gov.in/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["eating_house", "trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "eating_house",
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "legal_metrology": {
     "id": "legal_metrology",
@@ -247,14 +365,20 @@
     "department": "State Legal Metrology Department",
     "statute": "Legal Metrology Act, 2009",
     "timeline": "7–15 working days",
-    "documents": ["Weighing instrument details", "Premises proof"],
+    "documents": [
+      "Weighing instrument details",
+      "Premises proof"
+    ],
     "icon": "filecheck",
     "portalUrl": "https://tslm.telangana.gov.in",
     "sourceUrl": "https://consumeraffairs.nic.in/acts-and-rules/legal-metrology",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "shops": {
     "id": "shops",
@@ -262,14 +386,21 @@
     "department": "State Labour Department",
     "statute": "State Shops & Establishments Act",
     "timeline": "3–7 working days",
-    "documents": ["Premises proof", "ID proof", "Employee details"],
+    "documents": [
+      "Premises proof",
+      "ID proof",
+      "Employee details"
+    ],
     "icon": "store",
     "portalUrl": "https://labour.telangana.gov.in",
     "sourceUrl": "https://labour.telangana.gov.in/",
     "stage": 4,
     "stageName": "Labour & Ongoing Compliance",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "both"
   },
   "esi": {
     "id": "esi",
@@ -277,14 +408,22 @@
     "department": "ESIC (via Shram Suvidha)",
     "statute": "Employees' State Insurance Act, 1948",
     "timeline": "Online, same day",
-    "documents": ["PAN", "Employee details", "Bank account"],
+    "documents": [
+      "PAN",
+      "Employee details",
+      "Bank account"
+    ],
     "icon": "shield",
     "portalUrl": "https://www.shramsuvidha.gov.in",
     "sourceUrl": "https://www.esic.gov.in/esi-act",
     "stage": 4,
     "stageName": "Labour & Ongoing Compliance",
-    "dependsOn": ["gst", "udyam"],
-    "locationDependent": false
+    "dependsOn": [
+      "gst",
+      "udyam"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "epf": {
     "id": "epf",
@@ -292,14 +431,22 @@
     "department": "EPFO (via Shram Suvidha)",
     "statute": "Employees' Provident Funds Act, 1952",
     "timeline": "Online, same day",
-    "documents": ["PAN", "Employee details", "Bank account"],
+    "documents": [
+      "PAN",
+      "Employee details",
+      "Bank account"
+    ],
     "icon": "shield",
     "portalUrl": "https://www.shramsuvidha.gov.in",
     "sourceUrl": "https://www.epfindia.gov.in/site_en/epf_act.php",
     "stage": 4,
     "stageName": "Labour & Ongoing Compliance",
-    "dependsOn": ["gst", "udyam"],
-    "locationDependent": false
+    "dependsOn": [
+      "gst",
+      "udyam"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "iec_code": {
     "id": "iec_code",
@@ -307,14 +454,22 @@
     "department": "Directorate General of Foreign Trade (DGFT)",
     "statute": "Foreign Trade (Development & Regulation) Act, 1992",
     "timeline": "3–5 working days",
-    "documents": ["PAN", "Aadhaar", "Bank account", "Business registration certificate"],
+    "documents": [
+      "PAN",
+      "Aadhaar",
+      "Bank account",
+      "Business registration certificate"
+    ],
     "icon": "file",
     "portalUrl": "https://dgft.gov.in",
     "sourceUrl": "https://dgft.gov.in/CP/?opt=ft-act",
     "stage": 1,
     "stageName": "Entity & Registration",
-    "dependsOn": ["gst"],
-    "locationDependent": false
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "rera": {
     "id": "rera",
@@ -322,14 +477,22 @@
     "department": "State Real Estate Regulatory Authority",
     "statute": "Real Estate (Regulation and Development) Act, 2016",
     "timeline": "30–60 working days",
-    "documents": ["Land title deed", "Building plan", "Legal opinion", "CA certificate of project cost"],
+    "documents": [
+      "Land title deed",
+      "Building plan",
+      "Legal opinion",
+      "CA certificate of project cost"
+    ],
     "icon": "building",
     "portalUrl": "https://rera.telangana.gov.in",
     "sourceUrl": "https://mohua.gov.in/cms/rera.php",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["company_incorporation"],
-    "locationDependent": true
+    "dependsOn": [
+      "company_incorporation"
+    ],
+    "locationDependent": true,
+    "submissionType": "online"
   },
   "nbfc_registration": {
     "id": "nbfc_registration",
@@ -337,14 +500,22 @@
     "department": "Reserve Bank of India (RBI)",
     "statute": "Reserve Bank of India Act, 1934 — Chapter IIIB",
     "timeline": "90–180 working days",
-    "documents": ["Certificate of incorporation", "Net Owned Funds proof (₹2Cr min)", "Business plan", "Board resolution"],
+    "documents": [
+      "Certificate of incorporation",
+      "Net Owned Funds proof (₹2Cr min)",
+      "Business plan",
+      "Board resolution"
+    ],
     "icon": "rupee",
     "portalUrl": "https://www.rbi.org.in",
     "sourceUrl": "https://www.rbi.org.in/Scripts/FAQView.aspx?Id=92",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["company_incorporation"],
-    "locationDependent": false
+    "dependsOn": [
+      "company_incorporation"
+    ],
+    "locationDependent": false,
+    "submissionType": "physical"
   },
   "osp_licence": {
     "id": "osp_licence",
@@ -352,14 +523,22 @@
     "department": "Department of Telecommunications (DOT)",
     "statute": "Indian Telegraph Act, 1885 / New Telecom Policy",
     "timeline": "7–15 working days",
-    "documents": ["Company registration", "PAN", "Network diagram", "Premises proof"],
+    "documents": [
+      "Company registration",
+      "PAN",
+      "Network diagram",
+      "Premises proof"
+    ],
     "icon": "zap",
     "portalUrl": "https://dot.gov.in",
     "sourceUrl": "https://dot.gov.in/other-service-provider-osp",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["company_incorporation"],
-    "locationDependent": false
+    "dependsOn": [
+      "company_incorporation"
+    ],
+    "locationDependent": false,
+    "submissionType": "physical"
   },
   "peso_licence": {
     "id": "peso_licence",
@@ -367,14 +546,22 @@
     "department": "Petroleum and Explosives Safety Organisation (PESO)",
     "statute": "Explosives Act, 1884 / Petroleum Act, 1934",
     "timeline": "30–60 working days",
-    "documents": ["Site plan", "Safety equipment details", "NOC from fire services", "Insurance policy"],
+    "documents": [
+      "Site plan",
+      "Safety equipment details",
+      "NOC from fire services",
+      "Insurance policy"
+    ],
     "icon": "shield",
     "portalUrl": "https://peso.gov.in",
     "sourceUrl": "https://peso.gov.in/Acts_Rules.aspx",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["fire_noc"],
-    "locationDependent": true
+    "dependsOn": [
+      "fire_noc"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "clinical_establishment": {
     "id": "clinical_establishment",
@@ -382,14 +569,22 @@
     "department": "State Health Department",
     "statute": "Clinical Establishments (Registration & Regulation) Act, 2010",
     "timeline": "30–45 working days",
-    "documents": ["Medical practitioner registration", "Equipment list", "Premises proof", "Staff qualifications"],
+    "documents": [
+      "Medical practitioner registration",
+      "Equipment list",
+      "Premises proof",
+      "Staff qualifications"
+    ],
     "icon": "filecheck",
     "portalUrl": "https://clinicalestablishments.gov.in",
     "sourceUrl": "https://clinicalestablishments.gov.in/cms/Home.aspx",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "environmental_clearance": {
     "id": "environmental_clearance",
@@ -397,14 +592,20 @@
     "department": "Ministry of Environment, Forest and Climate Change (MoEFCC) / SEIAA",
     "statute": "EIA Notification, 2006 under Environment Protection Act, 1986",
     "timeline": "60–120 working days",
-    "documents": ["EIA report", "Public hearing record", "Project feasibility report", "Site plan"],
+    "documents": [
+      "EIA report",
+      "Public hearing record",
+      "Project feasibility report",
+      "Site plan"
+    ],
     "icon": "leaf",
     "portalUrl": "https://parivesh.nic.in",
     "sourceUrl": "https://environmentclearance.nic.in/",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
     "dependsOn": [],
-    "locationDependent": true
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "hazardous_waste": {
     "id": "hazardous_waste",
@@ -412,14 +613,22 @@
     "department": "State Pollution Control Board",
     "statute": "Hazardous and Other Wastes (Management & Transboundary Movement) Rules, 2016",
     "timeline": "30–45 working days",
-    "documents": ["Waste inventory", "Disposal plan", "MoU with TSDF facility", "CTE/CTO copy"],
+    "documents": [
+      "Waste inventory",
+      "Disposal plan",
+      "MoU with TSDF facility",
+      "CTE/CTO copy"
+    ],
     "icon": "leaf",
     "portalUrl": "https://tspcb.cgg.gov.in",
     "sourceUrl": "https://cpcb.nic.in/hazardous-waste/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["cte"],
-    "locationDependent": true
+    "dependsOn": [
+      "cte"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "epr_registration": {
     "id": "epr_registration",
@@ -427,14 +636,21 @@
     "department": "Central Pollution Control Board (CPCB)",
     "statute": "Plastic Waste Management Rules, 2016 (amended 2022)",
     "timeline": "15–30 working days",
-    "documents": ["Company registration", "Annual plastic usage data", "Waste management plan"],
+    "documents": [
+      "Company registration",
+      "Annual plastic usage data",
+      "Waste management plan"
+    ],
     "icon": "leaf",
     "portalUrl": "https://eprplastic.cpcb.gov.in",
     "sourceUrl": "https://cpcb.nic.in/plastic-waste/",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["gst"],
-    "locationDependent": false
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": false,
+    "submissionType": "physical"
   },
   "contract_labour": {
     "id": "contract_labour",
@@ -442,14 +658,22 @@
     "department": "State Labour Department",
     "statute": "Contract Labour (Regulation & Abolition) Act, 1970",
     "timeline": "15–30 working days",
-    "documents": ["List of contract workers", "Contractor details", "Premises proof", "EPF/ESI proof"],
+    "documents": [
+      "List of contract workers",
+      "Contractor details",
+      "Premises proof",
+      "EPF/ESI proof"
+    ],
     "icon": "shield",
     "portalUrl": "https://labour.telangana.gov.in",
     "sourceUrl": "https://labour.gov.in/sites/default/files/TheContractLabour(Regulation%26Abolition)Act1970.pdf",
     "stage": 4,
     "stageName": "Labour & Ongoing Compliance",
-    "dependsOn": ["shops"],
-    "locationDependent": true
+    "dependsOn": [
+      "shops"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "professional_tax": {
     "id": "professional_tax",
@@ -457,14 +681,21 @@
     "department": "State Commercial Taxes Department",
     "statute": "State Professional Tax Act (varies by state)",
     "timeline": "3–7 working days",
-    "documents": ["PAN", "Employee salary register", "Business registration"],
+    "documents": [
+      "PAN",
+      "Employee salary register",
+      "Business registration"
+    ],
     "icon": "rupee",
     "portalUrl": "https://professionaltax.telangana.gov.in",
     "sourceUrl": "https://professionaltax.telangana.gov.in/",
     "stage": 4,
     "stageName": "Labour & Ongoing Compliance",
-    "dependsOn": ["gst"],
-    "locationDependent": true
+    "dependsOn": [
+      "gst"
+    ],
+    "locationDependent": true,
+    "submissionType": "both"
   },
   "mining_lease": {
     "id": "mining_lease",
@@ -472,14 +703,22 @@
     "department": "State Mines & Geology Department / IBM",
     "statute": "Mines and Minerals (Development & Regulation) Act, 1957",
     "timeline": "90–180 working days",
-    "documents": ["Mining plan", "Environmental clearance", "Forest clearance", "Land ownership proof"],
+    "documents": [
+      "Mining plan",
+      "Environmental clearance",
+      "Forest clearance",
+      "Land ownership proof"
+    ],
     "icon": "building",
     "portalUrl": "https://mines.gov.in",
     "sourceUrl": "https://mines.gov.in/webportal/content/mmdr-act-1957",
     "stage": 2,
     "stageName": "Premises & Infrastructure",
-    "dependsOn": ["environmental_clearance"],
-    "locationDependent": true
+    "dependsOn": [
+      "environmental_clearance"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   },
   "dgca_approval": {
     "id": "dgca_approval",
@@ -487,14 +726,20 @@
     "department": "Directorate General of Civil Aviation (DGCA)",
     "statute": "Aircraft Act, 1934 / Drone Rules, 2021",
     "timeline": "15–30 working days",
-    "documents": ["Drone specifications", "Remote pilot licence", "Insurance", "UIN application"],
+    "documents": [
+      "Drone specifications",
+      "Remote pilot licence",
+      "Insurance",
+      "UIN application"
+    ],
     "icon": "zap",
     "portalUrl": "https://digitalsky.dgca.gov.in",
     "sourceUrl": "https://www.dgca.gov.in/",
     "stage": 3,
     "stageName": "Operational Licences",
     "dependsOn": [],
-    "locationDependent": false
+    "locationDependent": false,
+    "submissionType": "online"
   },
   "vehicle_fitness": {
     "id": "vehicle_fitness",
@@ -502,13 +747,21 @@
     "department": "State Regional Transport Authority (RTA)",
     "statute": "Motor Vehicles Act, 1988",
     "timeline": "7–15 working days",
-    "documents": ["Vehicle RC", "Insurance", "PUC certificate", "Driver licence"],
+    "documents": [
+      "Vehicle RC",
+      "Insurance",
+      "PUC certificate",
+      "Driver licence"
+    ],
     "icon": "file",
     "portalUrl": "https://transport.telangana.gov.in",
     "sourceUrl": "https://morth.nic.in/motor-vehicle-act-1988",
     "stage": 3,
     "stageName": "Operational Licences",
-    "dependsOn": ["trade_licence"],
-    "locationDependent": true
+    "dependsOn": [
+      "trade_licence"
+    ],
+    "locationDependent": true,
+    "submissionType": "physical"
   }
 }
