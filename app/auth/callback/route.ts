@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
   if (code) {
     const cookieStore = await cookies()
@@ -31,9 +30,29 @@ export async function GET(request: Request) {
         },
       }
     )
-    await supabase.auth.exchangeCodeForSession(code)
+    
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!error && session?.user) {
+      const user = session.user;
+      
+      // Upsert the user's profile into Supabase
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          email: user.email,
+        }, {
+          onConflict: 'id'
+        });
+
+      if (profileError) {
+        console.error('Error upserting profile:', profileError);
+      }
+    }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL(next, request.url))
+  // Always redirect to dashboard
+  return NextResponse.redirect(new URL('/dashboard', request.url))
 }

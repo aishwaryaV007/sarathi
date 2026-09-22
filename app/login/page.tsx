@@ -1,60 +1,18 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/lib/i18n/context";
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const router = useRouter();
   const { t } = useLanguage();
-  const searchParams = useSearchParams();
-
-  // Where to send the user after login — defaults to /describe
-  const returnTo = searchParams.get("returnTo") || "/describe";
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    const supabase = createClient();
-    if (!supabase) {
-      // Demo mode fallback when Supabase is not configured
-      setMessage(t("login.demoMode"));
-      setTimeout(() => {
-        router.push(returnTo);
-      }, 700);
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${location.origin}/auth/callback?next=${returnTo}`,
-      },
-    });
-
-    if (error) {
-      setMessage("Error: " + error.message);
-    } else {
-      // For demo, immediately push them to describe
-      setMessage(t("login.checkEmail"));
-      setTimeout(() => {
-         router.push(returnTo);
-      }, 1500);
-    }
-    setLoading(false);
-  };
 
   return (
     <div className="min-h-[calc(100vh-140px)] flex flex-col items-center justify-center p-6">
-      <Card className="w-full max-w-[420px] border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px]">
+      <Card className="w-full max-w-[380px] border-sarathi-line shadow-[0_1px_2px_rgba(16,42,79,.08)] rounded-[14px] overflow-hidden">
         <CardHeader className="text-center pt-9 pb-6">
           <div className="flex justify-center mb-7">
             {/* Sarathi Logo */}
@@ -68,50 +26,13 @@ function LoginForm() {
             </div>
           </div>
           <CardTitle className="font-serif text-[28px] font-bold text-sarathi-ink mb-1.5 tracking-[-0.3px]">
-            {t("login.title")}
+            Sign in to Sarathi
           </CardTitle>
           <CardDescription className="text-[15.5px] text-sarathi-muted">
-            {t("login.subtitle")}
+            Your guide through government approvals
           </CardDescription>
         </CardHeader>
         <CardContent className="pb-8 px-8">
-          <form onSubmit={handleLogin} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-2.5">
-              <label htmlFor="email" className="font-semibold text-[14.5px] text-sarathi-ink">
-                {t("login.emailLabel")}
-              </label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder={t("login.emailPlaceholder")} 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-[46px] border-[1.5px] border-sarathi-line-strong rounded-[8px] bg-white px-3.5 text-[15px] focus-visible:ring-0 focus-visible:border-sarathi-blue focus-visible:shadow-[0_0_0_3px_var(--color-sarathi-blue-050)] transition-all"
-              />
-            </div>
-            
-            <button 
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center justify-center bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[16px] h-[48px] w-full rounded-[8px] transition-colors mt-2 disabled:opacity-70"
-            >
-              {loading ? t("login.sending") : t("login.continue")}
-            </button>
-
-            {message && (
-              <p className="text-[14px] text-center font-medium text-sarathi-blue mt-2">
-                {message}
-              </p>
-            )}
-          </form>
-
-          <div className="flex items-center justify-center space-x-2 my-5">
-            <div className="h-[1px] bg-sarathi-line flex-1"></div>
-            <span className="text-[13px] font-medium text-sarathi-muted">{t("login.or")}</span>
-            <div className="h-[1px] bg-sarathi-line flex-1"></div>
-          </div>
-
           <button 
             type="button"
             onClick={async () => {
@@ -120,7 +41,7 @@ function LoginForm() {
                 await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=${returnTo}`
+                    redirectTo: `${window.location.origin}/auth/callback`
                   }
                 });
               }
@@ -134,19 +55,20 @@ function LoginForm() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               <path d="M1 1h22v22H1z" fill="none"/>
             </svg>
-            {t("login.google")}
+            Continue with Google
           </button>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2.5 justify-center pb-8 pt-0 px-8">
+        <div className="h-[1px] bg-sarathi-line w-full"></div>
+        <CardFooter className="flex flex-col gap-2.5 justify-center pb-8 pt-6 px-8 bg-gray-50/50">
           <button 
             type="button"
-            onClick={() => router.push(returnTo)}
+            onClick={() => router.push('/dashboard')}
             className="text-[13.5px] font-semibold text-sarathi-blue hover:underline cursor-pointer"
           >
-            {t("login.skip")}
+            Skip for demo (continue as guest) &rarr;
           </button>
-          <p className="text-[13px] text-sarathi-faint text-center">
-            {t("login.newHere")}
+          <p className="text-[12.5px] text-sarathi-muted text-center mt-1">
+            New here? You'll set up your profile after signing in.
           </p>
         </CardFooter>
       </Card>
