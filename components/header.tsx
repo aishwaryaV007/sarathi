@@ -109,9 +109,9 @@ export function Header() {
 
             {!loading && userEmail ? (
               <div className="hidden sm:flex items-center gap-4">
-                <span className="text-[14px] font-medium text-sarathi-ink truncate max-w-[150px]" title={userEmail}>
+                <Link href="/profile" className="text-[14px] font-medium text-sarathi-ink hover:text-sarathi-blue transition-colors truncate max-w-[150px]" title={userEmail}>
                   {userEmail}
-                </span>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="text-[14px] font-medium text-sarathi-muted hover:text-sarathi-ink transition-colors"

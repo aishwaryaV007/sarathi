@@ -49,32 +49,19 @@ export function DashboardClient() {
     <div className="min-h-[calc(100vh-140px)] py-11 px-6">
       <div className="max-w-[1120px] mx-auto">
         
-        {/* Header Section (Founder Profile) */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-9 border-b border-sarathi-line pb-8">
-          <div className="flex items-center gap-5">
-            {userData ? (
-              <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-sarathi-blue to-[#8fb4e0] text-white flex items-center justify-center font-bold text-[28px] shadow-sm border-2 border-white ring-1 ring-sarathi-line-strong">
-                {userData.email?.charAt(0).toUpperCase() || "F"}
-              </div>
-            ) : (
-              <div className="w-[72px] h-[72px] rounded-full bg-slate-200 animate-pulse border-2 border-white ring-1 ring-sarathi-line-strong"></div>
-            )}
-            
-            <div>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sarathi-green bg-sarathi-green-050 border border-[#bbf7d0] px-2 py-0.5 rounded-full mb-2 uppercase tracking-wide">
-                Verified Founder
-              </div>
-              <h1 className="font-serif font-bold text-[32px] text-sarathi-ink tracking-[-0.2px] mb-1 leading-none">
-                {userData?.user_metadata?.full_name || "Founder Profile"}
-              </h1>
-              <p className="text-[15px] text-sarathi-muted font-medium">
-                {userData?.email || "Loading your profile..."}
-              </p>
-            </div>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-9 border-b border-sarathi-line pb-6">
+          <div>
+            <h1 className="font-serif font-bold text-[32px] text-sarathi-ink tracking-[-0.2px] mb-1.5">
+              {t("dashboard.title")}
+            </h1>
+            <p className="text-[16px] text-sarathi-muted">
+              {t("dashboard.subtitle")}
+            </p>
           </div>
           <Link 
             href="/describe" 
-            className="inline-flex items-center gap-2 bg-sarathi-blue hover:bg-blue-700 text-white font-semibold text-[15px] h-[48px] px-6 rounded-[8px] transition-all shadow-sm shrink-0"
+            className="inline-flex items-center gap-1.5 bg-sarathi-blue hover:bg-sarathi-blue-700 text-white font-semibold text-[14.5px] h-[44px] px-6 rounded-[8px] transition-colors shrink-0"
           >
             <Plus className="w-4 h-4" />
             Start New Business
