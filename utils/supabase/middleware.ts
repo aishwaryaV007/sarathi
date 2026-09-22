@@ -36,21 +36,24 @@ export async function updateSession(request: NextRequest) {
       }
     );
 
-    // Refresh auth session
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Determine if the route requires authentication
+    const isProtectedRoute = 
+      request.nextUrl.pathname.startsWith("/dashboard") ||
+      request.nextUrl.pathname.startsWith("/apply") ||
+      request.nextUrl.pathname.startsWith("/documents");
 
-    if (
-      !user &&
-      (request.nextUrl.pathname.startsWith("/dashboard") ||
-        request.nextUrl.pathname.startsWith("/apply") ||
-        request.nextUrl.pathname.startsWith("/documents"))
-    ) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/login";
-      redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname);
-      return NextResponse.redirect(redirectUrl);
+    if (isProtectedRoute) {
+      // Only make the slow network call to Supabase on protected routes
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/login";
+        redirectUrl.searchParams.set("returnTo", request.nextUrl.pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
     }
   } catch (err) {
     console.warn("Supabase session update skipped:", err);

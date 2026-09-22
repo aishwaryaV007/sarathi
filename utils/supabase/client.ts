@@ -31,13 +31,14 @@ export function createClient() {
         data: { session: { user: mockUser } as any },
         error: null
       });
-      supabase.auth.onAuthStateChange = (callback) => {
+      supabase.auth.onAuthStateChange = (callback: any) => {
         callback('SIGNED_IN', { user: mockUser } as any);
-        return { data: { subscription: { unsubscribe: () => {} } } };
+        return { data: { subscription: { id: "mock-id", callback, unsubscribe: () => {} } as any } };
       };
       supabase.auth.signOut = async () => {
         document.cookie = "demo_mock_email=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         window.location.reload();
+        return { error: null };
       };
     }
   }
