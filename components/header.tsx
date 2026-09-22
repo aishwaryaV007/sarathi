@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLanguage, LOCALE_LABELS, type Locale } from "@/lib/i18n/context";
 
 export function Header() {
   const { locale, setLocale, t } = useLanguage();
+  const pathname = usePathname();
 
   return (
     <>
@@ -24,10 +26,28 @@ export function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
-            <Link href="/" className="text-sarathi-blue font-semibold bg-sarathi-blue-050 text-[15px] px-[14px] py-[9px] rounded-[7px]">{t("header.home")}</Link>
-            <Link href="/dashboard" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">{t("header.track")}</Link>
-            <Link href="/schemes" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">{t("header.schemes")}</Link>
-            <Link href="/guide" className="text-sarathi-ink font-medium text-[15px] px-[14px] py-[9px] rounded-[7px] hover:bg-sarathi-blue-050 hover:text-sarathi-blue transition-colors">{t("header.guide")}</Link>
+            {[
+              { href: "/", label: t("header.home") },
+              { href: "/dashboard", label: t("header.track") },
+              { href: "/schemes", label: t("header.schemes") },
+              { href: "/guide", label: t("header.guide") }
+            ].map((link) => {
+              // Exact match for home, startsWith for others to handle sub-routes like /dashboard/details
+              const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              return (
+                <Link 
+                  key={link.href} 
+                  href={link.href} 
+                  className={`text-[15px] px-[14px] py-[9px] rounded-[7px] transition-colors ${
+                    isActive 
+                      ? "text-sarathi-blue font-semibold bg-sarathi-blue-050" 
+                      : "text-sarathi-ink font-medium hover:bg-sarathi-blue-050 hover:text-sarathi-blue"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="flex items-center gap-[10px]">
