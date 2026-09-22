@@ -25,6 +25,7 @@ export async function saveProject(profile: any) {
       uses_groundwater: profile.usesGroundwater,
       premises: profile.premisesType,
       entity_type: profile.entityType,
+      profile_data: profile,
     })
     .select("id")
     .single();

@@ -23,7 +23,7 @@ export async function getLatestProject() {
   }
 
   // Convert project schema back to profile schema
-  const profile = {
+  const profile = data.profile_data || {
     description: data.description,
     businessLabel: data.description, // Approximation
     legalStructure: "private_limited", // We don't save this exactly, using default approximation for UI
