@@ -68,7 +68,7 @@ export function Header() {
               { href: "/", label: t("header.home") },
               { href: "/dashboard", label: t("header.track") },
               { href: "/schemes", label: t("header.schemes") },
-              { href: "/pricing", label: "Pricing" },
+              { href: "/pricing", label: t("header.pricing") },
               { href: "/guide", label: t("header.guide") }
             ].map((link) => {
               // Exact match for home, startsWith for others to handle sub-routes like /dashboard/details
