@@ -80,19 +80,29 @@ export default function PricingPage() {
             </button>
           </div>
 
-          {/* Ecosystem / Zero Cost Model */}
+          {/* Enterprise Tier */}
           <div className="bg-gradient-to-b from-[#f8fafc] to-[#f1f5f9] rounded-[16px] p-8 border border-sarathi-line relative flex flex-col">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 border border-slate-200">
-              <Landmark className="w-5 h-5 text-amber-600" />
+            <h3 className="font-bold text-[22px] text-sarathi-ink mb-2">Enterprise</h3>
+            <div className="text-sarathi-muted text-[14px] mb-6">For complete peace of mind</div>
+            <div className="mb-6">
+              <span className="text-[36px] font-bold text-sarathi-ink">₹4,999</span>
+              <span className="text-sarathi-muted"> / year</span>
             </div>
-            <h3 className="font-bold text-[20px] text-sarathi-ink mb-2">Ecosystem Partner</h3>
-            <div className="text-sarathi-muted text-[14px] mb-6">Need margin money for a scheme?</div>
-            <p className="text-[14px] text-slate-600 mb-6 leading-relaxed flex-1">
-              We partner with top Neo-banks and NBFCs. Apply for an MSME loan or open a Current Account directly through Sarathi. <br/><br/>
-              <b>We don't charge you.</b> The banks pay us a lead fee, keeping compliance free for you.
-            </p>
-            <button className="flex items-center justify-center gap-2 w-full py-3 rounded-[8px] bg-white border border-slate-300 text-sarathi-ink font-semibold hover:border-slate-400 transition-colors">
-              Explore Partners <ArrowRight className="w-4 h-4" />
+            <ul className="space-y-4 mb-8 flex-1">
+              {[
+                "Dedicated Compliance Expert",
+                "End-to-end Registration Filing",
+                "Notice & Query Resolution",
+                "Physical Audit Support"
+              ].map((feature, i) => (
+                <li key={i} className="flex items-start gap-3 text-[14px] text-sarathi-ink">
+                  <CheckCircle2 className="w-5 h-5 text-slate-700 shrink-0" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <button className="block text-center w-full py-3 rounded-[8px] bg-white border border-slate-300 text-sarathi-ink font-semibold hover:border-slate-400 transition-colors shadow-sm">
+              Contact Sales
             </button>
           </div>
         </div>
