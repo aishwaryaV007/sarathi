@@ -131,7 +131,7 @@ const FIELD_ELEMENT_IDS: Record<string, string> = {
   jurisdictionType: "jurisdiction-trigger",
   premisesType: "premises-section",
   investment: "investment-input",
-  turnover: "turnover-input",
+
   workers: "workers-input",
   food: "food-section",
   dineIn: "dineIn-section",
@@ -178,7 +178,7 @@ export function validateStep1Form(values: {
 
 export function validateStep2Form(values: {
   investment: string;
-  turnover: string;
+
   workers: string;
   activity: BusinessActivity | null;
   legalStructure?: LegalStructure | "";
@@ -206,11 +206,6 @@ export function validateStep2Form(values: {
     errs.investment = "Investment must be a valid number (0 or higher)";
   }
 
-  if (values.turnover.trim() !== "") {
-    if (isNaN(Number(values.turnover)) || Number(values.turnover) < 0) {
-      errs.turnover = "Turnover must be a valid number (0 or higher)";
-    }
-  }
 
   if (values.workers.trim() === "") {
     errs.workers = "Enter number of employees";
@@ -271,7 +266,6 @@ export default function DescribePage() {
 
   // Step 2: Scale & Adaptive Specifics (starts empty)
   const [investment, setInvestment] = useState("");
-  const [turnover, setTurnover] = useState("");
   const [workers, setWorkers] = useState("");
   const [premisesOwnership, setPremisesOwnership] = useState<"rented" | "owned">("rented");
 
@@ -306,7 +300,6 @@ export default function DescribePage() {
         if (parsed.jurisdictionType) setJurisdictionType(parsed.jurisdictionType);
         if (parsed.premisesType) setPremisesType(parsed.premisesType);
         if (parsed.investment) setInvestment(parsed.investment);
-        if (parsed.turnover) setTurnover(parsed.turnover);
         if (parsed.workers) setWorkers(parsed.workers);
         if (parsed.premisesOwnership) setPremisesOwnership(parsed.premisesOwnership);
         if (parsed.power) setPower(parsed.power);
@@ -329,13 +322,13 @@ export default function DescribePage() {
     if (!isLoaded) return;
     const data = {
       step, activity, legalStructure, description, city, stateName, jurisdictionType, premisesType,
-      investment, turnover, workers, premisesOwnership,
+      investment, workers, premisesOwnership,
       power, food, dineIn, groundwater, effluents, weighing, drugs, alcohol, isStartup
     };
     localStorage.setItem("sarathi_form_data", JSON.stringify(data));
   }, [
     isLoaded, step, activity, legalStructure, description, city, stateName, jurisdictionType, premisesType,
-    investment, turnover, workers, premisesOwnership,
+    investment, workers, premisesOwnership,
     power, food, dineIn, groundwater, effluents, weighing, drugs, alcohol, isStartup
   ]);
 
@@ -373,14 +366,6 @@ export default function DescribePage() {
         setErrors((prev) => ({ ...prev, investment: "Investment must be a valid number (0 or higher)" }));
       } else {
         clearError("investment");
-      }
-    } else if (field === "turnover") {
-      if (turnover.trim() === "") {
-        setErrors((prev) => ({ ...prev, turnover: "Enter estimated annual turnover" }));
-      } else if (isNaN(Number(turnover)) || Number(turnover) < 0) {
-        setErrors((prev) => ({ ...prev, turnover: "Turnover must be a valid number (0 or higher)" }));
-      } else {
-        clearError("turnover");
       }
     } else if (field === "workers") {
       if (workers.trim() === "") {
@@ -494,7 +479,6 @@ export default function DescribePage() {
   const validateStep2 = () =>
     validateStep2Form({
       investment,
-      turnover,
       workers,
       activity,
       legalStructure,
@@ -558,7 +542,6 @@ export default function DescribePage() {
     if (Object.keys(errs).length > 0) {
       const order = [
         "investment",
-        "turnover",
         "workers",
         "food",
         "dineIn",
@@ -592,7 +575,7 @@ export default function DescribePage() {
       hasPhysicalPremises: premisesType !== "home_office",
       premises: premisesOwnership,
       investmentLakh: Number(investment),
-      annualTurnoverLakh: Number(turnover),
+      annualTurnoverLakh: 0,
       workers: Number(workers),
       usesPower: power === "yes",
       handlesFood: food === "yes",
@@ -625,14 +608,11 @@ export default function DescribePage() {
 
   // Live preview of MSME classification
   const invNum = Number(investment);
-  const turnNum = Number(turnover);
+  const turnNum = 0;
   const hasScaleValues =
     investment.trim() !== "" &&
-    turnover.trim() !== "" &&
     !isNaN(invNum) &&
-    !isNaN(turnNum) &&
-    invNum >= 0 &&
-    turnNum >= 0;
+    invNum >= 0;
 
   const msmeTier = hasScaleValues ? classifyMsme(invNum, turnNum) : null;
   const workersNum = Number(workers);
@@ -982,7 +962,7 @@ export default function DescribePage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Investment */}
                     <div className="space-y-1">
                       <label className="text-[13px] font-semibold text-sarathi-ink block">
@@ -1016,43 +996,6 @@ export default function DescribePage() {
                       {hasError("investment") && (
                         <p id="investment-error" role="alert" className="text-[12px] text-red-600 font-medium mt-1">
                           {errors.investment}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Turnover */}
-                    <div className="space-y-1">
-                      <label className="text-[13px] font-semibold text-sarathi-ink block">
-                        Est. Annual Turnover <span className="font-normal text-sarathi-muted">(Optional)</span>
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sarathi-blue">₹</span>
-                        <Input
-                          id="turnover-input"
-                          type="number"
-                          value={turnover}
-                          onChange={(e) => {
-                            setTurnover(e.target.value);
-                            if (e.target.value.trim() !== "" && !isNaN(Number(e.target.value)) && Number(e.target.value) >= 0) {
-                              clearError("turnover");
-                            }
-                          }}
-                          onBlur={() => markTouched("turnover")}
-                          aria-required="false"
-                          aria-invalid={hasError("turnover")}
-                          aria-describedby={hasError("turnover") ? "turnover-error" : undefined}
-                          className={`h-[42px] bg-white text-[14px] ${
-                            hasError("turnover")
-                              ? "border-red-500 ring-1 ring-red-500 focus:border-red-500"
-                              : "border-sarathi-line-strong"
-                          }`}
-                          placeholder="e.g. 50"
-                        />
-                        <span className="text-[12.5px] text-sarathi-muted font-medium">lakh</span>
-                      </div>
-                      {hasError("turnover") && (
-                        <p id="turnover-error" role="alert" className="text-[12px] text-red-600 font-medium mt-1">
-                          {errors.turnover}
                         </p>
                       )}
                     </div>
